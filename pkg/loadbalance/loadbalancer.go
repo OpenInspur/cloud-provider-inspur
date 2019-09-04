@@ -3,9 +3,7 @@ package loadbalance
 import (
 	"context"
 	"fmt"
-	"strconv"
-	"strings"
-
+	"gitserver/kubernetes/inspur-cloud-controller-manager/pkg/incloud"
 	"gitserver/kubernetes/inspur-cloud-controller-manager/pkg/instance"
 	"gitserver/kubernetes/inspur-cloud-controller-manager/pkg/util"
 	corev1 "k8s.io/api/core/v1"
@@ -18,25 +16,39 @@ var (
 )
 
 type LoadBalancer struct {
-	//inject service
 	nodeLister corev1lister.NodeLister
 	listeners  []*Listener
 
 	LoadBalancerSpec
-	Status LoadBalancerStatus
+	incloud.InCloud
 }
 
 type LoadBalancerSpec struct {
-	service           *corev1.Service
-	EIPAllocateSource EIPAllocateSource
-	EIPStrategy       EIPStrategy
-	EIPs              []string
-	Type              int
-	TCPPorts          []int
-	NodePorts         []int
-	Nodes             []*corev1.Node
-	Name              string
-	clusterName       string
+	//service     *corev1.Service
+	//Type        int
+	//TCPPorts    []int
+	//NodePorts   []int
+	//Nodes       []*corev1.Node
+	//Name        string
+	//clusterName string
+	RegionId          string `json:"regionId"`
+	CreatedTime       string `json:"createdTime"`
+	ExpiredTime       string `json:"expiredTime"`
+	SpecificationId   string `json:"specificationId"`
+	SpecificationName string `json:"specificationName"`
+	SlbId             string `json:"slbId"`
+	SlbName           string `json:"slbName"`
+	Scheme            string `json:"scheme"`
+	BusinessIp        string `json:"businessIp"`
+	VpcId             string `json:"vpcId"`
+	VpcName           string `json:"vpcName"`
+	SubnetId          string `json:"subnetId"`
+	EipId             string `json:"eipId"`
+	EipAddress        string `json:"eipAddress"`
+	ListenerCount     string `json:"listenerCount"`
+	SlbType           string `json:"slbType"`
+	State             string `json:"state"`
+	UserId            string `json:"userId"`
 }
 
 type LoadBalancerStatus struct {
@@ -50,98 +62,99 @@ type NewLoadBalancerOption struct {
 	K8sService  *corev1.Service
 	Context     context.Context
 	ClusterName string
-	SkipCheck   bool
 }
 
-// NewLoadBalancer create loadbalancer in memory, not in cloud, call 'CreateQingCloudLB' to create a real loadbalancer in incloud
-func NewLoadBalancer(opt *NewLoadBalancerOption) (*LoadBalancer, error) {
+// NewLoadBalancer create loadbalancer in memory, not in cloud, call api to create a real loadbalancer in incloud
+func NewLoadBalancer(opt *NewLoadBalancerOption, config *incloud.InCloud) (*LoadBalancer, error) {
 	result := &LoadBalancer{
 		nodeLister: opt.NodeLister,
 	}
-	result.Name = GetLoadBalancerName(opt.ClusterName, opt.K8sService)
-	lbType := opt.K8sService.Annotations[ServiceAnnotationLoadBalancerType]
-	if opt.SkipCheck {
-		result.Type = 0
-	} else {
-		if lbType == "" {
-			result.Type = 0
-		} else {
-			t, err := strconv.Atoi(lbType)
-			if err != nil {
-				err = fmt.Errorf("Pls spec a valid value of loadBalancer for service %s, accept values are '0-3',err: %s", opt.K8sService.Name, err.Error())
-				return nil, err
-			}
-			if t > 3 || t < 0 {
-				err = fmt.Errorf("Pls spec a valid value of loadBalancer for service %s, accept values are '0-3'", opt.K8sService.Name)
-				return nil, err
-			}
-			result.Type = t
-		}
-	}
-	if strategy, ok := opt.K8sService.Annotations[ServiceAnnotationLoadBalancerEipStrategy]; ok && strategy == string(ReuseEIP) {
-		result.EIPStrategy = ReuseEIP
-	} else {
-		result.EIPStrategy = Exclusive
-	}
-	if source, ok := opt.K8sService.Annotations[ServiceAnnotationLoadBalancerEipSource]; ok {
-		switch source {
-		case string(AllocateOnly):
-			result.EIPAllocateSource = AllocateOnly
-		case string(UseAvailableOnly):
-			result.EIPAllocateSource = UseAvailableOnly
-		case string(UseAvailableOrAllocateOne):
-			result.EIPAllocateSource = UseAvailableOrAllocateOne
-		default:
-			result.EIPAllocateSource = ManualSet
-		}
-	} else {
-		result.EIPAllocateSource = ManualSet
-	}
-	t, n := util.GetPortsOfService(opt.K8sService)
-	result.TCPPorts = t
-	result.NodePorts = n
-	result.service = opt.K8sService
-	result.Nodes = opt.K8sNodes
-	result.clusterName = opt.ClusterName
-	if result.EIPAllocateSource == ManualSet {
-		lbEipIds, hasEip := opt.K8sService.Annotations[ServiceAnnotationLoadBalancerEipIds]
-		if hasEip {
-			result.EIPs = strings.Split(lbEipIds, ",")
-		}
-	}
+	//result.Name = GetLoadBalancerName(opt.ClusterName, opt.K8sService)
+	//lbType := opt.K8sService.Annotations[ServiceAnnotationLoadBalancerType]
+	//if lbType == "" {
+	//	result.Type = 0
+	//} else {
+	//	t, err := strconv.Atoi(lbType)
+	//	if err != nil {
+	//		err = fmt.Errorf("Pls spec a valid value of loadBalancer for service %s, accept values are '0-3',err: %s", opt.K8sService.Name, err.Error())
+	//		return nil, err
+	//	}
+	//	if t > 3 || t < 0 {
+	//		err = fmt.Errorf("Pls spec a valid value of loadBalancer for service %s, accept values are '0-3'", opt.K8sService.Name)
+	//		return nil, err
+	//	}
+	//	result.Type = t
+	//}
+	//if strategy, ok := opt.K8sService.Annotations[ServiceAnnotationLoadBalancerEipStrategy]; ok && strategy == string(ReuseEIP) {
+	//	result.EIPStrategy = ReuseEIP
+	//} else {
+	//	result.EIPStrategy = Exclusive
+	//}
+	//if source, ok := opt.K8sService.Annotations[ServiceAnnotationLoadBalancerEipSource]; ok {
+	//	switch source {
+	//	case string(AllocateOnly):
+	//		result.EIPAllocateSource = AllocateOnly
+	//	case string(UseAvailableOnly):
+	//		result.EIPAllocateSource = UseAvailableOnly
+	//	case string(UseAvailableOrAllocateOne):
+	//		result.EIPAllocateSource = UseAvailableOrAllocateOne
+	//	default:
+	//		result.EIPAllocateSource = ManualSet
+	//	}
+	//} else {
+	//	result.EIPAllocateSource = ManualSet
+	//}
+	//t, n := util.GetPortsOfService(opt.K8sService)
+	//result.TCPPorts = t
+	//result.NodePorts = n
+	//result.service = opt.K8sService
+	//result.Nodes = opt.K8sNodes
+	//result.clusterName = opt.ClusterName
+	//if result.EIPAllocateSource == ManualSet {
+	//	lbEipIds, hasEip := opt.K8sService.Annotations[ServiceAnnotationLoadBalancerEipIds]
+	//	if hasEip {
+	//		result.EIPs = strings.Split(lbEipIds, ",")
+	//	}
+	//}
+	result.InCloud = *config
 	return result, nil
 }
 
-// LoadQcLoadBalancer use incloud api to get lb in cloud, return err if not found
-func (l *LoadBalancer) LoadQcLoadBalancer() error {
-	//realLb, err := l.lbExec.GetLoadBalancerByName(l.Name)
-	//if err != nil {
-	//	return err
-	//}
-	//if realLb == nil {
-	//	return ErrorLBNotFoundInCloud
-	//}
-	//l.Status.QcLoadBalancer = realLb
+//GetLoadBalancer use incloud api to get lb in cloud, return err if not found
+func (lb *LoadBalancer) GetLoadBalancer(name string) error {
+	config := lb.InCloud
+	token, error := incloud.GetKeyCloakToken(config.RequestedSubject, config.TokenClientID, config.ClientSecret, config.KeycloakUrl)
+	if error != nil {
+		return error
+	}
+	lbs, err := incloud.DescribeLoadBalancers(config.SlbUrlPre, token, name)
+	if err != nil {
+		return err
+	}
+	if lbs == nil {
+		return ErrorLBNotFoundInCloud
+	}
+	lb.LoadBalancerSpec = *lbs
 	return nil
 }
 
 // LoadListeners use should mannually load listener because sometimes we do not need load entire topology. For example, deletion
-func (l *LoadBalancer) LoadListeners() error {
+func (lb *LoadBalancer) LoadListeners() error {
 	result := make([]*Listener, 0)
-	for _, port := range l.TCPPorts {
-		listener, err := NewListener(l, port)
+	for _, port := range lb.TCPPorts {
+		listener, err := NewListener(lb, port)
 		if err != nil {
 			return err
 		}
 		result = append(result, listener)
 	}
-	l.listeners = result
+	lb.listeners = result
 	return nil
 }
 
 // GetListeners return listeners of this service
-func (l *LoadBalancer) GetListeners() []*Listener {
-	return l.listeners
+func (lb *LoadBalancer) GetListeners() []*Listener {
+	return lb.listeners
 }
 
 // NeedResize tell us if we should resize the lb in incloud
@@ -181,25 +194,25 @@ func (l *LoadBalancer) GetListeners() []*Listener {
 //	return
 //}
 
-func (l *LoadBalancer) EnsureQingCloudLB() error {
-	//err := l.LoadQcLoadBalancer()
+func (lb *LoadBalancer) EnsureQingCloudLB() error {
+	//err := lb.GetLoadBalancer()
 	//if err != nil {
 	//	if err == ErrorLBNotFoundInCloud {
-	//		err = l.CreateQingCloudLB()
+	//		err = lb.CreateQingCloudLB()
 	//		if err != nil {
-	//			klog.Errorf("Failed to create lb in incloud of service %s", l.service.Name)
+	//			klog.Errorf("Failed to create lb in incloud of service %s", lb.service.Name)
 	//			return err
 	//		}
 	//		return nil
 	//	}
 	//	return err
 	//}
-	//err = l.UpdateQingCloudLB()
+	//err = lb.UpdateQingCloudLB()
 	//if err != nil {
-	//	klog.Errorf("Failed to update lb %s in incloud of service %s", l.Name, l.service.Name)
+	//	klog.Errorf("Failed to update lb %s in incloud of service %s", lb.Name, lb.service.Name)
 	//	return err
 	//}
-	//l.GenerateK8sLoadBalancer()
+	//lb.GenerateK8sLoadBalancer()
 	return nil
 }
 
@@ -232,7 +245,7 @@ func (l *LoadBalancer) EnsureQingCloudLB() error {
 //		return err
 //	}
 //	for _, listener := range l.listeners {
-//		err = listener.CreateQingCloudListenerWithBackends()
+//		err = listener.CreateListenerWithBackends()
 //		if err != nil {
 //			klog.Errorf("Failed to create listener %s of loadbalancer %s", listener.Name, l.Name)
 //			return err
@@ -295,7 +308,7 @@ func (l *LoadBalancer) EnsureQingCloudLB() error {
 //		return err
 //	}
 //	for _, listener := range l.listeners {
-//		err = listener.UpdateQingCloudListener()
+//		err = listener.UpdateListener()
 //		if err != nil {
 //			klog.Errorf("Failed to create/update listener %s of loadbalancer %s", listener.Name, l.Name)
 //			return err
@@ -316,8 +329,8 @@ func (l *LoadBalancer) EnsureQingCloudLB() error {
 //}
 
 // GetService return service of this loadbalancer
-func (l *LoadBalancer) GetService() *corev1.Service {
-	return l.service
+func (lb *LoadBalancer) GetService() *corev1.Service {
+	return lb.service
 }
 
 //func (l *LoadBalancer) deleteListenersOnlyIfOK() (bool, error) {
@@ -353,7 +366,7 @@ func (l *LoadBalancer) GetService() *corev1.Service {
 //
 //func (l *LoadBalancer) DeleteQingCloudLB() error {
 //	if l.Status.QcLoadBalancer == nil {
-//		err := l.LoadQcLoadBalancer()
+//		err := l.GetLoadBalancer()
 //		if err != nil {
 //			if err == ErrorLBNotFoundInCloud {
 //				klog.V(1).Infof("Cannot find the lb %s in cloud, maybe is deleted", l.Name)
@@ -420,7 +433,7 @@ func (l *LoadBalancer) GetService() *corev1.Service {
 //// GenerateK8sLoadBalancer get a corev1.LoadBalancerStatus for k8s
 //func (l *LoadBalancer) GenerateK8sLoadBalancer() error {
 //	if l.Status.QcLoadBalancer == nil {
-//		err := l.LoadQcLoadBalancer()
+//		err := l.GetLoadBalancer()
 //		if err != nil {
 //			if err == ErrorLBNotFoundInCloud {
 //				return nil
@@ -444,13 +457,13 @@ func (l *LoadBalancer) GetService() *corev1.Service {
 //}
 
 // GetNodesInstanceIDs return resource ids for listener to create backends
-func (l *LoadBalancer) GetNodesInstanceIDs() []string {
-	if len(l.Nodes) == 0 {
+func (lb *LoadBalancer) GetNodesInstanceIDs() []string {
+	if len(lb.Nodes) == 0 {
 		return nil
 	}
 	result := make([]string, 0)
-	for _, node := range l.Nodes {
-		result = append(result, instance.NodeNameToInstanceID(node.Name, l.nodeLister))
+	for _, node := range lb.Nodes {
+		result = append(result, instance.NodeNameToInstanceID(node.Name, lb.nodeLister))
 	}
 	return result
 }

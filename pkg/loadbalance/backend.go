@@ -21,7 +21,6 @@ type BackendSpec struct {
 }
 
 type BackendList struct {
-	//backendExec executor.QingCloudListenerBackendExecutor
 	Listener *Listener
 	Items    []*Backend
 }

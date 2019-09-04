@@ -16,30 +16,28 @@ var (
 // Listener is
 type Listener struct {
 	backendList *BackendList
-	//listenerExec executor.QingCloudListenerExecutor
-	//backendExec  executor.QingCloudListenerBackendExecutor
 	LisenerSpec
-	//Status *qcservice.LoadBalancerListener
 }
 
 type LisenerSpec struct {
-	lb           *LoadBalancer
-	PrefixName   string
-	Name         string
-	ListenerPort int
-	BalanceMode  string
-	Protocol     string
-	NodePort     int
+	SLBId         string
+	ListenerName  string
+	Protocol      string
+	ListenerPort  int
+	ForwardRule   string
+	NodePort      int //TODO
+	IsHealthCheck bool
 }
 
 func NewListener(lb *LoadBalancer, port int) (*Listener, error) {
-	service := lb.GetService()
-	p := checkPortInService(service, port)
+	//service := lb.GetService()
+	p := checkPortInService(sLBId, port)
 	if p == nil {
 		return nil, fmt.Errorf("The specified port is not in service")
 	}
 	result := &Listener{
 		LisenerSpec: LisenerSpec{
+
 			ListenerPort: port,
 			NodePort:     int(p.NodePort),
 			BalanceMode:  "source",
@@ -64,8 +62,8 @@ func NewListener(lb *LoadBalancer, port int) (*Listener, error) {
 	return result, nil
 }
 
-// LoadQcListener get real lb in incloud
-func (l *Listener) LoadQcListener() error {
+// LoadListener get real lb in incloud
+func (l *Listener) LoadListener() error {
 	//listeners, err := l.listenerExec.GetListenersOfLB(*l.lb.Status.QcLoadBalancer.LoadBalancerID, l.Name)
 	//if err != nil {
 	//	klog.Errorf("Failed to get listener of this service %s with port %d", l.Name, l.ListenerPort)
@@ -103,8 +101,8 @@ func (l *Listener) CheckPortConflict() (bool, error) {
 	return false, nil
 }
 
-func (l *Listener) CreateQingCloudListenerWithBackends() error {
-	//err := l.CreateQingCloudListener()
+func (l *Listener) CreateListenerWithBackends() error {
+	//err := l.CreateListener()
 	//if err != nil {
 	//	return err
 	//}
@@ -117,7 +115,7 @@ func (l *Listener) CreateQingCloudListenerWithBackends() error {
 	return nil
 }
 
-func (l *Listener) CreateQingCloudListener() error {
+func (l *Listener) CreateListener() error {
 	//if l.Status != nil {
 	//	klog.Warningln("Create listener even have a listener")
 	//}
@@ -156,7 +154,7 @@ func (l *Listener) GetBackends() *BackendList {
 	return l.backendList
 }
 
-func (l *Listener) DeleteQingCloudListener() error {
+func (l *Listener) DeleteListener() error {
 	//if l.Status == nil {
 	//	return fmt.Errorf("Could not delete noexit listener")
 	//}
@@ -174,6 +172,7 @@ func (l *Listener) NeedUpdate() bool {
 	//}
 	return false
 }
+
 func (l *Listener) UpdateBackends() error {
 	//l.LoadBackends()
 	//useless, err := l.backendList.LoadAndGetUselessBackends()
@@ -211,11 +210,11 @@ func (l *Listener) UpdateBackends() error {
 	return nil
 }
 
-func (l *Listener) UpdateQingCloudListener() error {
-	//err := l.LoadQcListener()
+func (l *Listener) UpdateListener() error {
+	//err := l.LoadListener()
 	////create if not exist
 	//if err == ErrorListenerNotFound {
-	//	err = l.CreateQingCloudListenerWithBackends()
+	//	err = l.CreateListenerWithBackends()
 	//	if err != nil {
 	//		klog.Errorf("Failed to create backends of listener %s of loadbalancer %s", l.Name, l.lb.Name)
 	//		return err

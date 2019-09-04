@@ -6,9 +6,8 @@ package incloud
 
 import (
 	"fmt"
-	"io"
-
 	"gopkg.in/gcfg.v1"
+	"io"
 	"k8s.io/client-go/informers"
 	corev1informer "k8s.io/client-go/informers/core/v1"
 	"k8s.io/cloud-provider"
@@ -20,7 +19,8 @@ const (
 )
 
 type LoadBalancerOpts struct {
-	SubnetID string `gcfg:"subnet-id"` // overrides autodetection.
+	SubnetID  string `gcfg:"subnet-id"` // overrides autodetection.
+	SlbUrlPre string `gcfg:"slburl-pre"`
 }
 
 type Config struct {
@@ -36,7 +36,7 @@ type Config struct {
 		DomainName string `gcfg:"domain-name"`
 
 		ClientId    string `gcfg:"client-id"`
-		KeycloakUrl string `gcfg:"keycloakUrl"`
+		KeycloakUrl string `gcfg:"KeycloakUrl"`
 		ProjectName string `gcfg:"projectName"`
 		InstanceID  string `gcfg:"instanceID"`
 		Port        string `gcfg:"port"`
@@ -56,16 +56,33 @@ type Config struct {
 	LoadBalancer LoadBalancerOpts
 }
 
+type keycloakToken struct {
+	AccessToken      string `json:"access_token"`
+	ExpiresIn        int32  `json:"expires_in"`
+	RefreshExpiresIn int32  `json:"refresh_expires_in"`
+	RefreshToken     string `json:"refresh_token"`
+	TokenType        string `json:"token_type"`
+	NotBeforePolicy  int32  `json:"not-before-policy"`
+	SessionState     string `json:"session_state"`
+}
+
 var _ cloudprovider.Interface = &InCloud{}
 
 // A single Kubernetes cluster can run in multiple zones,
 // but only within the same region (and cloud provider).
 type InCloud struct {
-	//TODO
 	zone            string
 	clusterID       string
 	nodeInformer    corev1informer.NodeInformer
 	serviceInformer corev1informer.ServiceInformer
+
+	//TODO
+	//cloud-config中配置slb url前缀；
+	SlbUrlPre        string
+	RequestedSubject string
+	TokenClientID    string
+	ClientSecret     string
+	KeycloakUrl      string
 }
 
 func init() {
@@ -91,38 +108,43 @@ func readConfig(config io.Reader) (Config, error) {
 
 // newInCloud returns a new instance of InCloud cloud provider.
 func newInCloud(config Config) (cloudprovider.Interface, error) {
-	//TODO
-	qc := InCloud{}
+	qc := InCloud{
+		SlbUrlPre:        config.LoadBalancer.SlbUrlPre,
+		RequestedSubject: config.Global.RequestedSubject,
+		TokenClientID:    config.Global.TokenClientID,
+		ClientSecret:     config.Global.ClientSecret,
+		KeycloakUrl:      config.Global.KeycloakUrl,
+	}
 
 	klog.V(1).Infof("InCloud provider init done")
 	return &qc, nil
 }
 
-func (qc *InCloud) Initialize(clientBuilder cloudprovider.ControllerClientBuilder, stop <-chan struct{}) {
+func (ic *InCloud) Initialize(clientBuilder cloudprovider.ControllerClientBuilder, stop <-chan struct{}) {
 	clientset := clientBuilder.ClientOrDie("do-shared-informers")
 	sharedInformer := informers.NewSharedInformerFactory(clientset, 0)
 	nodeinformer := sharedInformer.Core().V1().Nodes()
 	go nodeinformer.Informer().Run(stop)
-	qc.nodeInformer = nodeinformer
+	ic.nodeInformer = nodeinformer
 
 	serviceInformer := sharedInformer.Core().V1().Services()
 	go serviceInformer.Informer().Run(stop)
-	qc.serviceInformer = serviceInformer
+	ic.serviceInformer = serviceInformer
 }
 
-func (qc *InCloud) Clusters() (cloudprovider.Clusters, bool) {
+func (ic *InCloud) Clusters() (cloudprovider.Clusters, bool) {
 	return nil, false
 }
 
-func (qc *InCloud) Routes() (cloudprovider.Routes, bool) {
+func (ic *InCloud) Routes() (cloudprovider.Routes, bool) {
 	return nil, false
 }
 
-func (qc *InCloud) ProviderName() string {
+func (ic *InCloud) ProviderName() string {
 	return ProviderName
 }
 
 // HasClusterID returns true if the cluster has a clusterID
-func (qc *InCloud) HasClusterID() bool {
+func (ic *InCloud) HasClusterID() bool {
 	return true
 }

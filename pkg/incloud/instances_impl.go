@@ -9,7 +9,7 @@ import (
 //var _ cloudprovider.Instances = &InCloud{}
 
 // Instances returns an implementation of Instances for InCloud.
-func (qc *InCloud) Instances() (cloudprovider.Instances, bool) {
+func (ic *InCloud) Instances() (cloudprovider.Instances, bool) {
 	return nil, false
 }
 

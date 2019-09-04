@@ -10,27 +10,27 @@ import (
 
 var _ cloudprovider.Zones = &InCloud{}
 
-func (qc *InCloud) Zones() (cloudprovider.Zones, bool) {
-	return qc, true
+func (ic *InCloud) Zones() (cloudprovider.Zones, bool) {
+	return ic, true
 }
-func (qc *InCloud) GetZone(ctx context.Context) (cloudprovider.Zone, error) {
-	klog.V(4).Infof("GetZone() called, current zone is %v", qc.zone)
+func (ic *InCloud) GetZone(ctx context.Context) (cloudprovider.Zone, error) {
+	klog.V(4).Infof("GetZone() called, current zone is %v", ic.zone)
 
-	return cloudprovider.Zone{Region: qc.zone}, nil
+	return cloudprovider.Zone{Region: ic.zone}, nil
 }
 
 // GetZoneByNodeName implements Zones.GetZoneByNodeName
 // This is particularly useful in external cloud providers where the kubelet
 // does not initialize node data.
-func (qc *InCloud) GetZoneByNodeName(ctx context.Context, nodeName types.NodeName) (cloudprovider.Zone, error) {
-	klog.V(4).Infof("GetZoneByNodeName() called, current zone is %v, and return zone directly as temporary solution", qc.zone)
-	return cloudprovider.Zone{Region: qc.zone}, nil
+func (ic *InCloud) GetZoneByNodeName(ctx context.Context, nodeName types.NodeName) (cloudprovider.Zone, error) {
+	klog.V(4).Infof("GetZoneByNodeName() called, current zone is %v, and return zone directly as temporary solution", ic.zone)
+	return cloudprovider.Zone{Region: ic.zone}, nil
 }
 
 // GetZoneByProviderID implements Zones.GetZoneByProviderID
 // This is particularly useful in external cloud providers where the kubelet
 // does not initialize node data.
-func (qc *InCloud) GetZoneByProviderID(ctx context.Context, providerID string) (cloudprovider.Zone, error) {
-	klog.V(4).Infof("GetZoneByProviderID() called, current zone is %v, and return zone directly as temporary solution", qc.zone)
-	return cloudprovider.Zone{Region: qc.zone}, nil
+func (ic *InCloud) GetZoneByProviderID(ctx context.Context, providerID string) (cloudprovider.Zone, error) {
+	klog.V(4).Infof("GetZoneByProviderID() called, current zone is %v, and return zone directly as temporary solution", ic.zone)
+	return cloudprovider.Zone{Region: ic.zone}, nil
 }
