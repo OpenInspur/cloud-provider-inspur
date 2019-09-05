@@ -29,7 +29,7 @@ func (ic *InCloud) newListener(ctx context.Context, clusterName string, service 
 		klog.Errorf("Failed to call 'genLoadBalancer' of service %s , err is %s", service.Name,err.Error())
 		return nil, err
 	}
-	return loadbalance.NewListener(lb,int(service.Spec.HealthCheckNodePort))
+	return loadbalance.NewListener(lb,int(service.Spec.Ports[0].Port),slbId)
 }
 
 // LoadBalancer returns an implementation of LoadBalancer for InCloud.
