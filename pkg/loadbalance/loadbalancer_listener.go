@@ -29,20 +29,18 @@ type LisenerSpec struct {
 	IsHealthCheck bool
 }
 
-func NewListener(lb *LoadBalancer, port int) (*Listener, error) {
+func NewListener(lb *LoadBalancer, port int,slbId string) (*Listener, error) {
 	//service := lb.GetService()
-	p := checkPortInService(sLBId, port)
+	p := checkPortInService(lb.GetService(), port)
 	if p == nil {
 		return nil, fmt.Errorf("The specified port is not in service")
 	}
 	result := &Listener{
 		LisenerSpec: LisenerSpec{
-
+			SLBId: slbId	,
+			IsHealthCheck:true,
 			ListenerPort: port,
 			NodePort:     int(p.NodePort),
-			BalanceMode:  "source",
-			lb:           lb,
-			PrefixName:   GetListenerPrefix(service),
 		},
 	}
 	//if lsnExec, ok := lb.lbExec.(executor.QingCloudListenerExecutor); ok {
