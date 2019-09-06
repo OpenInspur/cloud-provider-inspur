@@ -2,7 +2,6 @@ package loadbalance
 
 import (
 	"fmt"
-	"strconv"
 
 	corev1 "k8s.io/api/core/v1"
 )
@@ -15,7 +14,6 @@ var (
 
 // Listener is
 type Listener struct {
-	backendList *BackendList
 	LisenerSpec
 }
 
@@ -31,34 +29,35 @@ type LisenerSpec struct {
 
 func NewListener(lb *LoadBalancer, port int) (*Listener, error) {
 	//service := lb.GetService()
-	p := checkPortInService(sLBId, port)
-	if p == nil {
-		return nil, fmt.Errorf("The specified port is not in service")
-	}
-	result := &Listener{
-		LisenerSpec: LisenerSpec{
+	//p := checkPortInService(sLBId, port)
+	//if p == nil {
+	//	return nil, fmt.Errorf("The specified port is not in service")
+	//}
+	//result := &Listener{
+	//	LisenerSpec: LisenerSpec{
+	//
+	//		ListenerPort: port,
+	//		NodePort:     int(p.NodePort),
+	//		BalanceMode:  "source",
+	//		lb:           lb,
+	//		PrefixName:   GetListenerPrefix(service),
+	//	},
+	//}
+	////if lsnExec, ok := lb.lbExec.(executor.QingCloudListenerExecutor); ok {
+	////	result.listenerExec = lsnExec
+	////}
+	////if bakExec, ok := lb.lbExec.(executor.QingCloudListenerBackendExecutor); ok {
+	////	result.backendExec = bakExec
+	////}
+	//result.Name = result.PrefixName + strconv.Itoa(int(p.Port))
+	//if p.Protocol == corev1.ProtocolTCP && p.Name == "http" {
+	//	result.Protocol = "http"
+	//} else if p.Protocol == corev1.ProtocolUDP {
+	//	result.Protocol = "udp"
+	//} else {
+	//	result.Protocol = "tcp"
+	//}
 
-			ListenerPort: port,
-			NodePort:     int(p.NodePort),
-			BalanceMode:  "source",
-			lb:           lb,
-			PrefixName:   GetListenerPrefix(service),
-		},
-	}
-	//if lsnExec, ok := lb.lbExec.(executor.QingCloudListenerExecutor); ok {
-	//	result.listenerExec = lsnExec
-	//}
-	//if bakExec, ok := lb.lbExec.(executor.QingCloudListenerBackendExecutor); ok {
-	//	result.backendExec = bakExec
-	//}
-	result.Name = result.PrefixName + strconv.Itoa(int(p.Port))
-	if p.Protocol == corev1.ProtocolTCP && p.Name == "http" {
-		result.Protocol = "http"
-	} else if p.Protocol == corev1.ProtocolUDP {
-		result.Protocol = "udp"
-	} else {
-		result.Protocol = "tcp"
-	}
 	return result, nil
 }
 

@@ -120,14 +120,14 @@ func NewLoadBalancer(opt *NewLoadBalancerOption, config *incloud.InCloud) (*Load
 	return result, nil
 }
 
-//GetLoadBalancer use incloud api to get lb in cloud, return err if not found
-func (lb *LoadBalancer) GetLoadBalancer(name string) error {
+//GetLoadBalancer by slbid,use incloud api to get lb in cloud, return err if not found
+func (lb *LoadBalancer) GetLoadBalancer() error {
 	config := lb.InCloud
 	token, error := incloud.GetKeyCloakToken(config.RequestedSubject, config.TokenClientID, config.ClientSecret, config.KeycloakUrl)
 	if error != nil {
 		return error
 	}
-	lbs, err := incloud.DescribeLoadBalancers(config.SlbUrlPre, token, name)
+	lbs, err := incloud.DescribeLoadBalancers(config.LbUrlPre, token, config.LbId)
 	if err != nil {
 		return err
 	}
@@ -139,16 +139,21 @@ func (lb *LoadBalancer) GetLoadBalancer(name string) error {
 }
 
 // LoadListeners use should mannually load listener because sometimes we do not need load entire topology. For example, deletion
+//LoadListeners get listeners by slbid
 func (lb *LoadBalancer) LoadListeners() error {
-	result := make([]*Listener, 0)
-	for _, port := range lb.TCPPorts {
-		listener, err := NewListener(lb, port)
-		if err != nil {
-			return err
-		}
-		result = append(result, listener)
+	config := lb.InCloud
+	token, error := incloud.GetKeyCloakToken(config.RequestedSubject, config.TokenClientID, config.ClientSecret, config.KeycloakUrl)
+	if error != nil {
+		return error
 	}
-	lb.listeners = result
+	lbs, err := incloud.DescribeListeners(config.LbUrlPre, token, config.LbId)
+	if err != nil {
+		return err
+	}
+	if lbs == nil {
+		return ErrorLBNotFoundInCloud
+	}
+	lb.listeners = lbs
 	return nil
 }
 

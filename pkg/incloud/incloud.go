@@ -19,8 +19,9 @@ const (
 )
 
 type LoadBalancerOpts struct {
-	SubnetID  string `gcfg:"subnet-id"` // overrides autodetection.
-	SlbUrlPre string `gcfg:"slburl-pre"`
+	SubnetID  string `gcfg:"subnet-id"`  //由于loadbalancer本身不在cloud controller manager创建，不需要
+	SlbUrlPre string `gcfg:"slburl-pre"` //cloud-config中配置slb url前缀；
+	SlbId     string `gcfg:"slbId"`      //创建集群时注入进来
 }
 
 type Config struct {
@@ -76,9 +77,8 @@ type InCloud struct {
 	nodeInformer    corev1informer.NodeInformer
 	serviceInformer corev1informer.ServiceInformer
 
-	//TODO
-	//cloud-config中配置slb url前缀；
-	SlbUrlPre        string
+	LbUrlPre         string
+	LbId             string
 	RequestedSubject string
 	TokenClientID    string
 	ClientSecret     string
@@ -109,7 +109,8 @@ func readConfig(config io.Reader) (Config, error) {
 // newInCloud returns a new instance of InCloud cloud provider.
 func newInCloud(config Config) (cloudprovider.Interface, error) {
 	qc := InCloud{
-		SlbUrlPre:        config.LoadBalancer.SlbUrlPre,
+		LbUrlPre:         config.LoadBalancer.SubnetID,
+		LbId:             config.LoadBalancer.SlbId,
 		RequestedSubject: config.Global.RequestedSubject,
 		TokenClientID:    config.Global.TokenClientID,
 		ClientSecret:     config.Global.ClientSecret,

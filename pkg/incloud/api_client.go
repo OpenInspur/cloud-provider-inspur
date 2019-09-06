@@ -55,13 +55,13 @@ func GetKeyCloakToken(requestedSubject, tokenClientId, clientSecret, keycloakUrl
 }
 
 //http://cn-north-3.10.110.25.123.xip.io/slb/v1/slbs?slbName=123
-//按名称查询用户的slb
-func DescribeLoadBalancers(url, token, name string) (*loadbalance.LoadBalancerSpec, error) {
+//按slb id查询用户的slb
+func DescribeLoadBalancers(url, token, slbId string) (*loadbalance.LoadBalancerSpec, error) {
 	tr := &http.Transport{
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 	}
 	client := &http.Client{Transport: tr}
-	reqUrl := url + "?slbName=" + name
+	reqUrl := url + "?slbId=" + slbId
 	req, err := http.NewRequest("GET", reqUrl, nil)
 	if err != nil {
 		glog.Errorf("Request error %v", err)
@@ -92,4 +92,42 @@ func DescribeLoadBalancers(url, token, name string) (*loadbalance.LoadBalancerSp
 		return nil, err
 	}
 	return &result[0], nil
+}
+
+func DescribeListeners(url, token, slbId string) (*[]loadbalance.LisenerSpec, error) {
+	tr := &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+	}
+	client := &http.Client{Transport: tr}
+	reqUrl := url + "/" + slbId + "/listeners"
+	req, err := http.NewRequest("GET", reqUrl, nil)
+	if err != nil {
+		glog.Errorf("Request error %v", err)
+		return nil, err
+	}
+	req.Header.Set("Content-Type", "text/plain")
+	req.Header.Set("Authorization", token)
+	req.Header.Set("Date", time.Now().UTC().Format(time.RFC1123))
+	res, err := client.Do(req)
+	if err != nil {
+		glog.Errorf("Response error %v", err)
+		return nil, err
+	}
+	defer res.Body.Close()
+	body, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		glog.Errorf("Get response body fail %v", err)
+		return nil, err
+	}
+	if res.StatusCode != http.StatusOK {
+		glog.Errorf("response not ok %v", res.StatusCode)
+		return nil, fmt.Errorf("response not ok %d", res.StatusCode)
+	}
+	var result []loadbalance.LisenerSpec
+	err = xml.Unmarshal(body, &result)
+	if err != nil {
+		glog.Errorf("Unmarshal body fail: %v", err)
+		return nil, err
+	}
+	return &result, nil
 }
