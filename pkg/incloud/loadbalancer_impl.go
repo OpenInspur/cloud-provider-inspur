@@ -31,7 +31,12 @@ func (ic *InCloud) genLoadBalancer(ctx context.Context, clusterName string, serv
 }
 
 func (ic *InCloud) newListener(ctx context.Context, clusterName string, service *v1.Service, nodes []*v1.Node, slbId string) (*loadbalance.Listener, error) {
-	return loadbalance.NewListener()
+	lb, err := ic.genLoadBalancer(ctx, clusterName, service, nodes)
+	if err != nil {
+		klog.Errorf("Failed to call 'genLoadBalancer' of service %s , err is %s", service.Name, err.Error())
+		return nil, err
+	}
+	return loadbalance.NewListener(lb, int(service.Spec.Ports[0].Port), slbId)
 }
 
 // LoadBalancer returns an implementation of LoadBalancer for InCloud.
