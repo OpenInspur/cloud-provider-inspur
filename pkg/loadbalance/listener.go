@@ -2,8 +2,17 @@ package loadbalance
 
 import (
 	"fmt"
+	"github.com/inspur/inspur-cloud-controller-manager/pkg/incloud"
 
 	corev1 "k8s.io/api/core/v1"
+)
+
+type Protocol string
+
+const (
+	ProtocolTCP   Protocol = "TCP"
+	ProtocolHTTP  Protocol = "HTTP"
+	ProtocolHTTPS Protocol = "HTTPS"
 )
 
 var (
@@ -12,75 +21,96 @@ var (
 	ErrorListenerNotFound     = fmt.Errorf("Failed to get listener in cloud")
 )
 
-// Listener is
+//返回结构体
 type Listener struct {
-	LisenerSpec
+	SLBId         string `json:"slbId"`
+	ListenerId    string `json:"listenerId"`
+	ListenerName  string `json:"listenerName"`
+	Protocol      string `json:"protocol"`
+	Port          int    `json:"port"`
+	ForwardRule   string `json:"forwardRule"`
+	IsHealthCheck bool   `json:"isHealthCheck"`
+	BackendServer []*BackendServer
 }
 
-type LisenerSpec struct {
-	SLBId         string
-	ListenerName  string
-	Protocol      string
-	ListenerPort  int
-	ForwardRule   string
-	NodePort      int //TODO
-	IsHealthCheck bool
+//创建结构体,和Listener不一样
+type CreateListenerOpts struct {
+	SLBId         string   `json:"slbId"`
+	ListenerName  string   `json:"listenerName"`
+	Protocol      Protocol `json:"protocol"`
+	Port          int32    `json:"port"`
+	ForwardRule   string   `json:"forwardRule"`
+	IsHealthCheck bool     `json:"isHealthCheck"`
 }
 
-func NewListener(lb *LoadBalancer, port int) (*Listener, error) {
-	//service := lb.GetService()
-	//p := checkPortInService(sLBId, port)
-	//if p == nil {
-	//	return nil, fmt.Errorf("The specified port is not in service")
-	//}
-	//result := &Listener{
-	//	LisenerSpec: LisenerSpec{
-	//
-	//		ListenerPort: port,
-	//		NodePort:     int(p.NodePort),
-	//		BalanceMode:  "source",
-	//		lb:           lb,
-	//		PrefixName:   GetListenerPrefix(service),
-	//	},
-	//}
-	////if lsnExec, ok := lb.lbExec.(executor.QingCloudListenerExecutor); ok {
-	////	result.listenerExec = lsnExec
-	////}
-	////if bakExec, ok := lb.lbExec.(executor.QingCloudListenerBackendExecutor); ok {
-	////	result.backendExec = bakExec
-	////}
-	//result.Name = result.PrefixName + strconv.Itoa(int(p.Port))
-	//if p.Protocol == corev1.ProtocolTCP && p.Name == "http" {
-	//	result.Protocol = "http"
-	//} else if p.Protocol == corev1.ProtocolUDP {
-	//	result.Protocol = "udp"
-	//} else {
-	//	result.Protocol = "tcp"
-	//}
+// GetListeners use should mannually load listener because sometimes we do not need load entire topology. For example, deletion
+//GetListeners get listeners by slbid
+func GetListeners(config *InCloud) ([]Listener, error) {
+	token, error := getKeyCloakToken(config.RequestedSubject, config.TokenClientID, config.ClientSecret, config.KeycloakUrl)
+	if error != nil {
+		return nil, error
+	}
+	ls, err := describeListenersBySlbId(config.LbUrlPre, token, config.LbId)
+	if err != nil {
+		return nil, err
+	}
+	if ls == nil {
+		return nil, ErrorNotFoundInCloud
+	}
+	//TODO: get listener's backend
 
-	return result, nil
+	return ls, nil
 }
 
-// LoadListener get real lb in incloud
-func (l *Listener) LoadListener() error {
-	//listeners, err := l.listenerExec.GetListenersOfLB(*l.lb.Status.QcLoadBalancer.LoadBalancerID, l.Name)
-	//if err != nil {
-	//	klog.Errorf("Failed to get listener of this service %s with port %d", l.Name, l.ListenerPort)
-	//	return err
-	//}
-	//if len(listeners) > 1 {
-	//	klog.Exit("Fatal ! Get multi listeners for one port, quit now")
-	//}
-	//if len(listeners) == 0 {
-	//	return ErrorListenerNotFound
-	//}
-	//l.Status = listeners[0]
+//GetListener get listener by listenerid
+func GetListener(config *InCloud, listenerId string) (*Listener, error) {
+	token, error := getKeyCloakToken(config.RequestedSubject, config.TokenClientID, config.ClientSecret, config.KeycloakUrl)
+	if error != nil {
+		return nil, error
+	}
+	ls, err := describeListenerByListnerId(config.LbUrlPre, token, config.LbId, listenerId)
+	if err != nil {
+		return nil, err
+	}
+	if ls == nil {
+		return nil, ErrorNotFoundInCloud
+	}
+	return ls, nil
+}
+
+// get listener for a port or nil if does not exist
+func GetListenerForPort(existingListeners []Listener, port corev1.ServicePort) *Listener {
+	for _, l := range existingListeners {
+		if Protocol(l.Protocol) == toListenersProtocol(port.Protocol) && l.Port == int(port.Port) {
+			return &l
+		}
+	}
+
 	return nil
 }
 
-func (l *Listener) LoadBackends() {
-	if l.backendList == nil {
-		l.backendList = NewBackendList(l.lb, l)
+func CreateListener(config *InCloud, opts CreateListenerOpts) (*Listener, error) {
+	token, error := getKeyCloakToken(config.RequestedSubject, config.TokenClientID, config.ClientSecret, config.KeycloakUrl)
+	if error != nil {
+		return nil, error
+	}
+	return createListener(config.LbUrlPre, token, opts)
+}
+
+func UpdateListener(config *InCloud, listenerid string, opts CreateListenerOpts) (*Listener, error) {
+	token, error := getKeyCloakToken(config.RequestedSubject, config.TokenClientID, config.ClientSecret, config.KeycloakUrl)
+	if error != nil {
+		return nil, error
+	}
+	return modifyListener(config.LbUrlPre, token, listenerid, opts)
+}
+
+func toListenersProtocol(protocol corev1.Protocol) Protocol {
+	switch protocol {
+	case corev1.ProtocolTCP:
+		return ProtocolTCP
+	default:
+		return Protocol(string(protocol))
 	}
 }
 
@@ -147,10 +177,6 @@ func (l *Listener) CreateListener() error {
 	//}
 	//l.Status = listener
 	return nil
-}
-
-func (l *Listener) GetBackends() *BackendList {
-	return l.backendList
 }
 
 func (l *Listener) DeleteListener() error {

@@ -3,27 +3,17 @@ package loadbalance
 import (
 	"context"
 	"fmt"
-	"gitserver/kubernetes/inspur-cloud-controller-manager/pkg/incloud"
-	"gitserver/kubernetes/inspur-cloud-controller-manager/pkg/instance"
 	"gitserver/kubernetes/inspur-cloud-controller-manager/pkg/util"
 	corev1 "k8s.io/api/core/v1"
 	corev1lister "k8s.io/client-go/listers/core/v1"
 )
 
 var (
-	ErrorLBNotFoundInCloud = fmt.Errorf("Cannot find lb in incloud")
+	ErrorNotFoundInCloud   = fmt.Errorf("Cannot find lb in incloud")
 	ErrorSGNotFoundInCloud = fmt.Errorf("Cannot find security group in incloud")
 )
 
 type LoadBalancer struct {
-	nodeLister corev1lister.NodeLister
-	listeners  []*Listener
-
-	LoadBalancerSpec
-	incloud.InCloud
-}
-
-type LoadBalancerSpec struct {
 	//service     *corev1.Service
 	//Type        int
 	//TCPPorts    []int
@@ -64,161 +54,20 @@ type NewLoadBalancerOption struct {
 	ClusterName string
 }
 
-// NewLoadBalancer create loadbalancer in memory, not in cloud, call api to create a real loadbalancer in incloud
-func NewLoadBalancer(opt *NewLoadBalancerOption, config *incloud.InCloud) (*LoadBalancer, error) {
-	result := &LoadBalancer{
-		nodeLister: opt.NodeLister,
-	}
-	//result.Name = GetLoadBalancerName(opt.ClusterName, opt.K8sService)
-	//lbType := opt.K8sService.Annotations[ServiceAnnotationLoadBalancerType]
-	//if lbType == "" {
-	//	result.Type = 0
-	//} else {
-	//	t, err := strconv.Atoi(lbType)
-	//	if err != nil {
-	//		err = fmt.Errorf("Pls spec a valid value of loadBalancer for service %s, accept values are '0-3',err: %s", opt.K8sService.Name, err.Error())
-	//		return nil, err
-	//	}
-	//	if t > 3 || t < 0 {
-	//		err = fmt.Errorf("Pls spec a valid value of loadBalancer for service %s, accept values are '0-3'", opt.K8sService.Name)
-	//		return nil, err
-	//	}
-	//	result.Type = t
-	//}
-	//if strategy, ok := opt.K8sService.Annotations[ServiceAnnotationLoadBalancerEipStrategy]; ok && strategy == string(ReuseEIP) {
-	//	result.EIPStrategy = ReuseEIP
-	//} else {
-	//	result.EIPStrategy = Exclusive
-	//}
-	//if source, ok := opt.K8sService.Annotations[ServiceAnnotationLoadBalancerEipSource]; ok {
-	//	switch source {
-	//	case string(AllocateOnly):
-	//		result.EIPAllocateSource = AllocateOnly
-	//	case string(UseAvailableOnly):
-	//		result.EIPAllocateSource = UseAvailableOnly
-	//	case string(UseAvailableOrAllocateOne):
-	//		result.EIPAllocateSource = UseAvailableOrAllocateOne
-	//	default:
-	//		result.EIPAllocateSource = ManualSet
-	//	}
-	//} else {
-	//	result.EIPAllocateSource = ManualSet
-	//}
-	//t, n := util.GetPortsOfService(opt.K8sService)
-	//result.TCPPorts = t
-	//result.NodePorts = n
-	//result.service = opt.K8sService
-	//result.Nodes = opt.K8sNodes
-	//result.clusterName = opt.ClusterName
-	//if result.EIPAllocateSource == ManualSet {
-	//	lbEipIds, hasEip := opt.K8sService.Annotations[ServiceAnnotationLoadBalancerEipIds]
-	//	if hasEip {
-	//		result.EIPs = strings.Split(lbEipIds, ",")
-	//	}
-	//}
-	result.InCloud = *config
-	return result, nil
-}
-
 //GetLoadBalancer by slbid,use incloud api to get lb in cloud, return err if not found
-func (lb *LoadBalancer) GetLoadBalancer() error {
-	config := lb.InCloud
-	token, error := incloud.GetKeyCloakToken(config.RequestedSubject, config.TokenClientID, config.ClientSecret, config.KeycloakUrl)
+func GetLoadBalancer(config *InCloud) (*LoadBalancer, error) {
+	token, error := getKeyCloakToken(config.RequestedSubject, config.TokenClientID, config.ClientSecret, config.KeycloakUrl)
 	if error != nil {
-		return error
+		return nil, error
 	}
-	lbs, err := incloud.DescribeLoadBalancers(config.LbUrlPre, token, config.LbId)
+	lb, err := describeLoadBalancer(config.LbUrlPre, token, config.LbId)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	if lbs == nil {
-		return ErrorLBNotFoundInCloud
+	if lb == nil {
+		return nil, ErrorNotFoundInCloud
 	}
-	lb.LoadBalancerSpec = *lbs
-	return nil
-}
-
-// LoadListeners use should mannually load listener because sometimes we do not need load entire topology. For example, deletion
-//LoadListeners get listeners by slbid
-func (lb *LoadBalancer) LoadListeners() error {
-	config := lb.InCloud
-	token, error := incloud.GetKeyCloakToken(config.RequestedSubject, config.TokenClientID, config.ClientSecret, config.KeycloakUrl)
-	if error != nil {
-		return error
-	}
-	lbs, err := incloud.DescribeListeners(config.LbUrlPre, token, config.LbId)
-	if err != nil {
-		return err
-	}
-	if lbs == nil {
-		return ErrorLBNotFoundInCloud
-	}
-	lb.listeners = lbs
-	return nil
-}
-
-// GetListeners return listeners of this service
-func (lb *LoadBalancer) GetListeners() []*Listener {
-	return lb.listeners
-}
-
-// NeedResize tell us if we should resize the lb in incloud
-//func (l *LoadBalancer) NeedResize() bool {
-//	if l.Status.QcLoadBalancer == nil {
-//		return false
-//	}
-//	if l.Type != *l.Status.QcLoadBalancer.LoadBalancerType {
-//		return true
-//	}
-//	return false
-//}
-//
-//func (l *LoadBalancer) NeedChangeIP() (yes bool, toadd []string, todelete []string) {
-//	if l.Status.QcLoadBalancer == nil || l.EIPAllocateSource != ManualSet {
-//		return
-//	}
-//	yes = true
-//	new := strings.Split(l.service.Annotations[ServiceAnnotationLoadBalancerEipIds], ",")
-//	old := make([]string, 0)
-//	for _, ip := range l.Status.QcLoadBalancer.Cluster {
-//		old = append(old, *ip.EIPID)
-//	}
-//	for _, ip := range new {
-//		if util.StringIndex(old, ip) == -1 {
-//			toadd = append(toadd, ip)
-//		}
-//	}
-//	for _, ip := range old {
-//		if util.StringIndex(new, ip) == -1 {
-//			todelete = append(todelete, ip)
-//		}
-//	}
-//	if len(toadd) == 0 && len(todelete) == 0 {
-//		yes = false
-//	}
-//	return
-//}
-
-func (lb *LoadBalancer) EnsureQingCloudLB() error {
-	//err := lb.GetLoadBalancer()
-	//if err != nil {
-	//	if err == ErrorLBNotFoundInCloud {
-	//		err = lb.CreateQingCloudLB()
-	//		if err != nil {
-	//			klog.Errorf("Failed to create lb in incloud of service %s", lb.service.Name)
-	//			return err
-	//		}
-	//		return nil
-	//	}
-	//	return err
-	//}
-	//err = lb.UpdateQingCloudLB()
-	//if err != nil {
-	//	klog.Errorf("Failed to update lb %s in incloud of service %s", lb.Name, lb.service.Name)
-	//	return err
-	//}
-	//lb.GenerateK8sLoadBalancer()
-	return nil
+	return lb, nil
 }
 
 //// CreateQingCloudLB do create a lb in incloud
@@ -333,11 +182,6 @@ func (lb *LoadBalancer) EnsureQingCloudLB() error {
 //	return nil
 //}
 
-// GetService return service of this loadbalancer
-func (lb *LoadBalancer) GetService() *corev1.Service {
-	return lb.service
-}
-
 //func (l *LoadBalancer) deleteListenersOnlyIfOK() (bool, error) {
 //	if l.Status.QcLoadBalancer == nil {
 //		return false, nil
@@ -373,7 +217,7 @@ func (lb *LoadBalancer) GetService() *corev1.Service {
 //	if l.Status.QcLoadBalancer == nil {
 //		err := l.GetLoadBalancer()
 //		if err != nil {
-//			if err == ErrorLBNotFoundInCloud {
+//			if err == ErrorNotFoundInCloud {
 //				klog.V(1).Infof("Cannot find the lb %s in cloud, maybe is deleted", l.Name)
 //				err = l.deleteSecurityGroup()
 //				if err != nil {
@@ -440,7 +284,7 @@ func (lb *LoadBalancer) GetService() *corev1.Service {
 //	if l.Status.QcLoadBalancer == nil {
 //		err := l.GetLoadBalancer()
 //		if err != nil {
-//			if err == ErrorLBNotFoundInCloud {
+//			if err == ErrorNotFoundInCloud {
 //				return nil
 //			}
 //			klog.Errorf("Failed to load qc loadbalance of %s", l.Name)
@@ -463,13 +307,13 @@ func (lb *LoadBalancer) GetService() *corev1.Service {
 
 // GetNodesInstanceIDs return resource ids for listener to create backends
 func (lb *LoadBalancer) GetNodesInstanceIDs() []string {
-	if len(lb.Nodes) == 0 {
-		return nil
-	}
+	//if len(lb.Nodes) == 0 {
+	//	return nil
+	//}
 	result := make([]string, 0)
-	for _, node := range lb.Nodes {
-		result = append(result, instance.NodeNameToInstanceID(node.Name, lb.nodeLister))
-	}
+	//for _, node := range lb.Nodes {
+	//	result = append(result, instance.NodeNameToInstanceID(node.Name, lb.nodeLister))
+	//}
 	return result
 }
 

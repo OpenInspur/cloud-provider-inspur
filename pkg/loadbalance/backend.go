@@ -2,27 +2,64 @@ package loadbalance
 
 import (
 	"fmt"
+	_ "k8s.io/api/core/v1"
 )
 
 var ErrorBackendNotFound = fmt.Errorf("Cannot find backend")
 
 type Backend struct {
-	//backendExec executor.QingCloudListenerBackendExecutor
-	Name string
-	Spec BackendSpec
-	//Status      *qcservice.LoadBalancerBackend
+	BackendId   string `json:"backendId"`
+	ListenerId  string `json:"listenerId"`
+	ServerId    string `json:"ServerId"`
+	Port        int    `json:"port"`
+	ServerName  string `json:"serverName"`
+	ServerIp    string `json:"serverIp"`
+	ServierType string `json:"type"`
+	Weight      int    `json:"weight"`
 }
 
-type BackendSpec struct {
-	Listener   *Listener
-	Weight     int
-	Port       int
-	InstanceID string
+type CreateBackendOpts struct {
+	SLBId      string           `json:"slbId"`
+	ListenerId string           `json:"listenerId"`
+	Servers    []*BackendServer `json:"servers"`
+}
+
+type BackendServer struct {
+	ServerId    string `json:"serverId"`
+	Port        int    `json:"port"`
+	ServerName  string `json:"serverName"`
+	ServerIp    string `json:"serverIp"`
+	ServierType string `json:"type"`
+	Weight      int    `json:"weight"`
 }
 
 type BackendList struct {
-	Listener *Listener
-	Items    []*Backend
+	code    string           `json:"code"`
+	Message string           `json:"message"`
+	Data    []*BackendServer `json:"data"`
+}
+
+func CreateBackend(config *InCloud, opts CreateBackendOpts) (*BackendList, error) {
+	token, error := getKeyCloakToken(config.RequestedSubject, config.TokenClientID, config.ClientSecret, config.KeycloakUrl)
+	if error != nil {
+		return nil, error
+	}
+	return createBackend(config.LbUrlPre, token, opts)
+}
+
+func UpdateBackends(config *InCloud, listener *Listener, backends interface{}) error {
+	//nodes, ok := backends.([]*v1.Node)
+	//if !ok {
+	//	glog.Infof("skip default server group update for type %s", reflect.TypeOf(backends))
+	//	return nil
+	//}
+	//TODO:遍历nodes
+
+	// checkout for newly added servers
+
+	// check for removed backend servers
+
+	return nil
 }
 
 func NewBackendList(lb *LoadBalancer, listener *Listener) *BackendList {
@@ -50,15 +87,6 @@ func NewBackendList(lb *LoadBalancer, listener *Listener) *BackendList {
 	return nil
 }
 
-//func (b *Backend) toQcBackendInput() *qcservice.LoadBalancerBackend {
-//	return &qcservice.LoadBalancerBackend{
-//		ResourceID:              &b.Spec.InstanceID,
-//		LoadBalancerBackendName: &b.Name,
-//		Port:                    &b.Spec.Port,
-//		Weight:                  &b.Spec.Weight,
-//	}
-//}
-//
 //func (b *Backend) Create() error {
 //	backends := make([]*qcservice.LoadBalancerBackend, 0)
 //	backends = append(backends, b.toQcBackendInput())

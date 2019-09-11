@@ -2,7 +2,7 @@
 // Use of this source code is governed by a Apache license
 // that can be found in the LICENSE file.
 
-package incloud
+package loadbalance
 
 import (
 	"fmt"
@@ -55,16 +55,6 @@ type Config struct {
 		OpenApiVersion string `gcfg:"openapi-version"`
 	}
 	LoadBalancer LoadBalancerOpts
-}
-
-type keycloakToken struct {
-	AccessToken      string `json:"access_token"`
-	ExpiresIn        int32  `json:"expires_in"`
-	RefreshExpiresIn int32  `json:"refresh_expires_in"`
-	RefreshToken     string `json:"refresh_token"`
-	TokenType        string `json:"token_type"`
-	NotBeforePolicy  int32  `json:"not-before-policy"`
-	SessionState     string `json:"session_state"`
 }
 
 var _ cloudprovider.Interface = &InCloud{}

@@ -1,0 +1,206 @@
+package loadbalance
+
+import (
+	"context"
+	"fmt"
+	"github.com/golang/glog"
+	"k8s.io/klog"
+	"strconv"
+	"time"
+
+	"gitserver/kubernetes/inspur-cloud-controller-manager/pkg/loadbalance"
+	"k8s.io/api/core/v1"
+	"k8s.io/cloud-provider"
+)
+
+const (
+	ServiceAnnotationLoadBalancerInternal = "service.beta.kubernetes.io/inspur-internal-load-balancer"
+	//Listener forwardRule
+	ServiceAnnotationLoadBalancerForwardRule = "loadbalancer.inspur.com/forward-rule"
+	//Listener isHealthCheck
+	ServiceAnnotationLoadBalancerHealthCheck = "loadbalancer.inspur.com/is-healthcheck"
+)
+
+// LoadBalancer returns an implementation of LoadBalancer for InCloud.
+func (ic *InCloud) LoadBalancer() (cloudprovider.LoadBalancer, bool) {
+	klog.V(4).Info("LoadBalancer() called")
+	return ic, true
+}
+
+// GetLoadBalancer returns whether the specified load balancer exists, and
+// if so, what its status is.
+func (ic *InCloud) GetLoadBalancer(ctx context.Context, clusterName string, service *v1.Service) (status *v1.LoadBalancerStatus, exists bool, err error) {
+	//TODO 此处约定为创建集群时loadbalancer slbid注入到cloud-config中
+	lb, err := loadbalance.GetLoadBalancer(ic)
+	if err != nil {
+		klog.Errorf("Failed to call 'GetLoadBalancer' of service %s,slb Id:%s", service.Name, lb.SlbId)
+		return nil, false, err
+	}
+
+	stat := &v1.LoadBalancerStatus{}
+	stat.Ingress = []v1.LoadBalancerIngress{{IP: lb.BusinessIp}}
+	if lb.EipAddress != "" {
+		stat.Ingress = append(stat.Ingress, v1.LoadBalancerIngress{IP: lb.EipAddress})
+	}
+	return stat, true, err
+}
+
+// GetLoadBalancerName returns the name of the load balancer. Implementations must treat the
+// *v1.Service parameter as read-only and not modify it.
+func (ic *InCloud) GetLoadBalancerName(_ context.Context, clusterName string, service *v1.Service) string {
+	return loadbalance.GetLoadBalancerName(clusterName, service)
+}
+
+// EnsureLoadBalancer creates a new load balancer 'name', or updates the existing one. Returns the status of the balancer
+// Implementations must treat the *v1.Service and *v1.Node
+// parameters as read-only and not modify them.
+// Parameter 'clusterName' is the name of the cluster as presented to kube-controller-manager
+// by inspur
+// 这里不创建LoadBalancer，查询LoadBalancer，有则创建Listener，无则报错
+func (ic *InCloud) EnsureLoadBalancer(ctx context.Context, clusterName string, service *v1.Service, nodes []*v1.Node) (*v1.LoadBalancerStatus, error) {
+	startTime := time.Now()
+	defer func() {
+		elapsed := time.Since(startTime)
+		glog.V(1).Infof("EnsureLoadBalancer takes total %d seconds", elapsed/time.Second)
+	}()
+
+	glog.V(4).Infof("EnsureLoadBalancer(%v, %v, %v, %v, %v, %v, %v)", clusterName, service.Namespace, service.Name,
+		service.Spec.LoadBalancerIP, service.Spec.Ports, nodes, service.Annotations)
+
+	if len(nodes) == 0 {
+		return nil, fmt.Errorf("there are no available nodes for LoadBalancer service %s/%s", service.Namespace, service.Name)
+	}
+
+	lb, err := loadbalance.GetLoadBalancer(ic)
+	if err != nil {
+		klog.Errorf("Failed to get lb by slbId:%s in incloud of service %s", lb.SlbId, service.Name)
+		return nil, err
+	}
+	ls, err := loadbalance.GetListeners(ic)
+	//verify scheme 负载均衡的网络模式，默认参数：internet-facing：公网（默认）internal：内网
+
+	forwardRule := getStringFromServiceAnnotation(service, ServiceAnnotationLoadBalancerForwardRule, "RR")
+	healthCheck := getStringFromServiceAnnotation(service, ServiceAnnotationLoadBalancerHealthCheck, "0")
+	hc, _ := strconv.ParseBool(healthCheck)
+
+	//verify ports
+	ports := service.Spec.Ports
+	if len(ports) == 0 {
+		return nil, fmt.Errorf("no ports provided for inspur load balancer")
+	}
+	//create/update Listener
+	for portIndex, port := range ports {
+		listener := loadbalance.GetListenerForPort(ls, port)
+		//port not assigned
+		if listener == nil {
+			glog.V(4).Infof("Creating listener for port %d", int(port.Port))
+			listener, err = loadbalance.CreateListener(ic, loadbalance.CreateListenerOpts{
+				SLBId:         lb.SlbId,
+				ListenerName:  fmt.Sprintf("listener_%s_%d", lb.SlbId, portIndex),
+				Protocol:      loadbalance.Protocol(port.Protocol),
+				Port:          port.Port,
+				ForwardRule:   forwardRule,
+				IsHealthCheck: hc,
+			})
+			if err != nil {
+				// Unknown error, retry later
+				return nil, fmt.Errorf("error creating LB listener: %v", err)
+			}
+
+		} else {
+			//TODO:
+			_, erro := loadbalance.UpdateListener(ic, listener.ListenerId, loadbalance.CreateListenerOpts{
+				SLBId:         lb.SlbId,
+				ListenerName:  fmt.Sprintf("listener_%s_%d", lb.SlbId, portIndex),
+				Protocol:      loadbalance.Protocol(port.Protocol),
+				Port:          port.Port,
+				ForwardRule:   forwardRule,
+				IsHealthCheck: hc,
+			})
+			if erro != nil {
+				return nil, fmt.Errorf("Error updating LB listener: %v", err)
+			}
+
+		}
+		ls, err := loadbalance.GetListener(ic, listener.ListenerId)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get LB listener %v: %v", ls.SLBId, ls.ListenerId)
+		}
+		loadbalance.UpdateBackends(ic, ls, nodes)
+	}
+
+	if err != nil {
+		return nil, err
+	}
+	status := &v1.LoadBalancerStatus{}
+	status.Ingress = []v1.LoadBalancerIngress{{IP: lb.BusinessIp}}
+	if lb.EipAddress != "" {
+		status.Ingress = append(status.Ingress, v1.LoadBalancerIngress{IP: lb.EipAddress})
+	}
+	return status, nil
+}
+
+// UpdateLoadBalancer updates hosts under the specified load balancer.
+// Implementations must treat the *v1.Service and *v1.Node
+// parameters as read-only and not modify them.
+// Parameter 'clusterName' is the name of the cluster as presented to kube-controller-manager
+func (ic *InCloud) UpdateLoadBalancer(ctx context.Context, clusterName string, service *v1.Service, nodes []*v1.Node) error {
+	//startTime := time.Now()
+	//defer func() {
+	//	elapsed := time.Since(startTime)
+	//	klog.V(1).Infof("UpdateLoadBalancer takes total %d seconds", elapsed/time.Second)
+	//}()
+	//lb, err := ic.genLoadBalancer(ctx, clusterName, service, nodes)
+	//if err != nil {
+	//	return err
+	//}
+	//err = lb.GetLoadBalancer()
+	//if err != nil {
+	//	klog.Errorf("Failed to get lb %s in incloud of service %s", lb.Name, service.Name)
+	//	return err
+	//}
+	//err = lb.LoadListeners()
+	//if err != nil {
+	//	klog.Errorf("Failed to get listeners of lb %s of service %s", lb.Name, service.Name)
+	//	return err
+	//}
+	//listeners := lb.GetListeners()
+	//for _, listener := range listeners {
+	//	listener.UpdateListener()
+	//}
+	return nil
+}
+
+// EnsureLoadBalancerDeleted deletes the specified load balancer if it
+// exists, returning nil if the load balancer specified either didn't exist or
+// was successfully deleted.
+// This construction is useful because many cloud providers' load balancers
+// have multiple underlying components, meaning a Get could say that the LB
+// doesn't exist even if some part of it is still laying around.
+// Implementations must treat the *v1.Service parameter as read-only and not modify it.
+// Parameter 'clusterName' is the name of the cluster as presented to kube-controller-manager
+func (ic *InCloud) EnsureLoadBalancerDeleted(ctx context.Context, clusterName string, service *v1.Service) error {
+	//startTime := time.Now()
+	//defer func() {
+	//	elapsed := time.Since(startTime)
+	//	klog.V(1).Infof("DeleteLoadBalancer takes total %d seconds", elapsed/time.Second)
+	//}()
+	//lb, _ := ic.genLoadBalancer(ctx, clusterName, service, nil, true)
+	//return lb.DeleteQingCloudLB()
+	return nil
+}
+
+//getStringFromServiceAnnotation searches a given v1.Service for a specific annotationKey and either returns the annotation's value or a specified defaultSetting
+func getStringFromServiceAnnotation(service *v1.Service, annotationKey string, defaultSetting string) string {
+	glog.V(4).Infof("getStringFromServiceAnnotation(%v, %v, %v)", service, annotationKey, defaultSetting)
+	if annotationValue, ok := service.Annotations[annotationKey]; ok {
+		//if there is an annotation for this setting, set the "setting" var to it
+		// annotationValue can be empty, it is working as designed
+		// it makes possible for instance provisioning loadbalancer without floatingip
+		glog.V(4).Infof("Found a Service Annotation: %v = %v", annotationKey, annotationValue)
+		return annotationValue
+	}
+	//if there is no annotation, set "settings" var to the value from cloud config
+	glog.V(4).Infof("Could not find a Service Annotation; falling back on cloud-config setting: %v = %v", annotationKey, defaultSetting)
+	return defaultSetting
+}

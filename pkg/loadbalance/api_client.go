@@ -1,4 +1,4 @@
-package incloud
+package loadbalance
 
 import (
 	"crypto/tls"
@@ -7,14 +7,27 @@ import (
 	"errors"
 	"fmt"
 	"github.com/golang/glog"
-	"gitserver/kubernetes/inspur-cloud-controller-manager/pkg/loadbalance"
 	"io/ioutil"
 	"net/http"
 	"strings"
 	"time"
 )
 
-func GetKeyCloakToken(requestedSubject, tokenClientId, clientSecret, keycloakUrl string) (string, error) {
+type CreateOptsBuilder interface {
+	ToListenerCreateMap() (map[string]interface{}, error)
+}
+
+type keycloakToken struct {
+	AccessToken      string `json:"access_token"`
+	ExpiresIn        int32  `json:"expires_in"`
+	RefreshExpiresIn int32  `json:"refresh_expires_in"`
+	RefreshToken     string `json:"refresh_token"`
+	TokenType        string `json:"token_type"`
+	NotBeforePolicy  int32  `json:"not-before-policy"`
+	SessionState     string `json:"session_state"`
+}
+
+func getKeyCloakToken(requestedSubject, tokenClientId, clientSecret, keycloakUrl string) (string, error) {
 	var grantType = "urn:ietf:params:oauth:grant-type:token-exchange"
 	var requestTokenType = "urn:ietf:params:oauth:token-type:refresh_token"
 	var audience = "console"
@@ -54,9 +67,9 @@ func GetKeyCloakToken(requestedSubject, tokenClientId, clientSecret, keycloakUrl
 	}
 }
 
-//http://cn-north-3.10.110.25.123.xip.io/slb/v1/slbs?slbName=123
+//http://cn-north-3.10.110.25.123.xip.io/slb/v1/slbs?slbId=123
 //按slb id查询用户的slb
-func DescribeLoadBalancers(url, token, slbId string) (*loadbalance.LoadBalancerSpec, error) {
+func describeLoadBalancer(url, token, slbId string) (*LoadBalancer, error) {
 	tr := &http.Transport{
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 	}
@@ -85,7 +98,7 @@ func DescribeLoadBalancers(url, token, slbId string) (*loadbalance.LoadBalancerS
 		glog.Errorf("response not ok %v", res.StatusCode)
 		return nil, fmt.Errorf("response not ok %d", res.StatusCode)
 	}
-	var result []loadbalance.LoadBalancerSpec
+	var result []LoadBalancer
 	err = xml.Unmarshal(body, &result)
 	if err != nil {
 		glog.Errorf("Unmarshal body fail: %v", err)
@@ -94,7 +107,7 @@ func DescribeLoadBalancers(url, token, slbId string) (*loadbalance.LoadBalancerS
 	return &result[0], nil
 }
 
-func DescribeListeners(url, token, slbId string) (*[]loadbalance.LisenerSpec, error) {
+func describeListenersBySlbId(url, token, slbId string) ([]Listener, error) {
 	tr := &http.Transport{
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 	}
@@ -123,11 +136,62 @@ func DescribeListeners(url, token, slbId string) (*[]loadbalance.LisenerSpec, er
 		glog.Errorf("response not ok %v", res.StatusCode)
 		return nil, fmt.Errorf("response not ok %d", res.StatusCode)
 	}
-	var result []loadbalance.LisenerSpec
+	var result []Listener
+	err = xml.Unmarshal(body, &result)
+	if err != nil {
+		glog.Errorf("Unmarshal body fail: %v", err)
+		return nil, err
+	}
+	return result, nil
+}
+
+func describeListenerByListnerId(url, token, slbId, listnerId string) (*Listener, error) {
+	tr := &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+	}
+	client := &http.Client{Transport: tr}
+	reqUrl := url + "/" + slbId + "/listeners/" + listnerId
+	req, err := http.NewRequest("GET", reqUrl, nil)
+	if err != nil {
+		glog.Errorf("Request error %v", err)
+		return nil, err
+	}
+	req.Header.Set("Content-Type", "text/plain")
+	req.Header.Set("Authorization", token)
+	req.Header.Set("Date", time.Now().UTC().Format(time.RFC1123))
+	res, err := client.Do(req)
+	if err != nil {
+		glog.Errorf("Response error %v", err)
+		return nil, err
+	}
+	defer res.Body.Close()
+	body, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		glog.Errorf("Get response body fail %v", err)
+		return nil, err
+	}
+	if res.StatusCode != http.StatusOK {
+		glog.Errorf("response not ok %v", res.StatusCode)
+		return nil, fmt.Errorf("response not ok %d", res.StatusCode)
+	}
+	var result Listener
 	err = xml.Unmarshal(body, &result)
 	if err != nil {
 		glog.Errorf("Unmarshal body fail: %v", err)
 		return nil, err
 	}
 	return &result, nil
+}
+
+func createListener(url, token string, opts CreateListenerOpts) (*Listener, error) {
+	return nil, nil
+}
+
+func modifyListener(url, token, listenerid string, opts CreateListenerOpts) (*Listener, error) {
+	return nil, nil
+
+}
+
+func createBackend(url, token string, opts CreateBackendOpts) (*BackendList, error) {
+	return nil, nil
 }
