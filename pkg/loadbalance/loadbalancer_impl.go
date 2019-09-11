@@ -55,7 +55,7 @@ func (ic *InCloud) GetLoadBalancerName(_ context.Context, clusterName string, se
 // parameters as read-only and not modify them.
 // Parameter 'clusterName' is the name of the cluster as presented to kube-controller-manager
 // by inspur
-// 这里不创建LoadBalancer，查询LoadBalancer，有则创建Listener，无则报错
+// 这里不创建LoadBalancer，查询LoadBalancer，有则创建Listener以及backend，无则报错
 func (ic *InCloud) EnsureLoadBalancer(ctx context.Context, clusterName string, service *v1.Service, nodes []*v1.Node) (*v1.LoadBalancerStatus, error) {
 	startTime := time.Now()
 	defer func() {
