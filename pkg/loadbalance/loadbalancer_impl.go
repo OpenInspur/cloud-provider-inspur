@@ -8,7 +8,6 @@ import (
 	"strconv"
 	"time"
 
-	"gitserver/kubernetes/inspur-cloud-controller-manager/pkg/loadbalance"
 	"k8s.io/api/core/v1"
 	"k8s.io/cloud-provider"
 )
@@ -31,7 +30,7 @@ func (ic *InCloud) LoadBalancer() (cloudprovider.LoadBalancer, bool) {
 // if so, what its status is.
 func (ic *InCloud) GetLoadBalancer(ctx context.Context, clusterName string, service *v1.Service) (status *v1.LoadBalancerStatus, exists bool, err error) {
 	//TODO 此处约定为创建集群时loadbalancer slbid注入到cloud-config中
-	lb, err := loadbalance.GetLoadBalancer(ic)
+	lb, err := GetLoadBalancer(ic)
 	if err != nil {
 		klog.Errorf("Failed to call 'GetLoadBalancer' of service %s,slb Id:%s", service.Name, lb.SlbId)
 		return nil, false, err
@@ -48,7 +47,7 @@ func (ic *InCloud) GetLoadBalancer(ctx context.Context, clusterName string, serv
 // GetLoadBalancerName returns the name of the load balancer. Implementations must treat the
 // *v1.Service parameter as read-only and not modify it.
 func (ic *InCloud) GetLoadBalancerName(_ context.Context, clusterName string, service *v1.Service) string {
-	return loadbalance.GetLoadBalancerName(clusterName, service)
+	return GetLoadBalancerName(clusterName, service)
 }
 
 // EnsureLoadBalancer creates a new load balancer 'name', or updates the existing one. Returns the status of the balancer
@@ -71,12 +70,12 @@ func (ic *InCloud) EnsureLoadBalancer(ctx context.Context, clusterName string, s
 		return nil, fmt.Errorf("there are no available nodes for LoadBalancer service %s/%s", service.Namespace, service.Name)
 	}
 
-	lb, err := loadbalance.GetLoadBalancer(ic)
+	lb, err := GetLoadBalancer(ic)
 	if err != nil {
 		klog.Errorf("Failed to get lb by slbId:%s in incloud of service %s", lb.SlbId, service.Name)
 		return nil, err
 	}
-	ls, err := loadbalance.GetListeners(ic)
+	ls, err := GetListeners(ic)
 	//verify scheme 负载均衡的网络模式，默认参数：internet-facing：公网（默认）internal：内网
 
 	forwardRule := getStringFromServiceAnnotation(service, ServiceAnnotationLoadBalancerForwardRule, "RR")
@@ -90,14 +89,14 @@ func (ic *InCloud) EnsureLoadBalancer(ctx context.Context, clusterName string, s
 	}
 	//create/update Listener
 	for portIndex, port := range ports {
-		listener := loadbalance.GetListenerForPort(ls, port)
+		listener := GetListenerForPort(ls, port)
 		//port not assigned
 		if listener == nil {
 			glog.V(4).Infof("Creating listener for port %d", int(port.Port))
-			listener, err = loadbalance.CreateListener(ic, loadbalance.CreateListenerOpts{
+			listener, err = CreateListener(ic, CreateListenerOpts{
 				SLBId:         lb.SlbId,
 				ListenerName:  fmt.Sprintf("listener_%s_%d", lb.SlbId, portIndex),
-				Protocol:      loadbalance.Protocol(port.Protocol),
+				Protocol:      Protocol(port.Protocol),
 				Port:          port.Port,
 				ForwardRule:   forwardRule,
 				IsHealthCheck: hc,
@@ -109,10 +108,10 @@ func (ic *InCloud) EnsureLoadBalancer(ctx context.Context, clusterName string, s
 
 		} else {
 			//TODO:
-			_, erro := loadbalance.UpdateListener(ic, listener.ListenerId, loadbalance.CreateListenerOpts{
+			_, erro := UpdateListener(ic, listener.ListenerId, CreateListenerOpts{
 				SLBId:         lb.SlbId,
 				ListenerName:  fmt.Sprintf("listener_%s_%d", lb.SlbId, portIndex),
-				Protocol:      loadbalance.Protocol(port.Protocol),
+				Protocol:      Protocol(port.Protocol),
 				Port:          port.Port,
 				ForwardRule:   forwardRule,
 				IsHealthCheck: hc,
@@ -122,11 +121,11 @@ func (ic *InCloud) EnsureLoadBalancer(ctx context.Context, clusterName string, s
 			}
 
 		}
-		ls, err := loadbalance.GetListener(ic, listener.ListenerId)
+		ls, err := GetListener(ic, listener.ListenerId)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get LB listener %v: %v", ls.SLBId, ls.ListenerId)
 		}
-		loadbalance.UpdateBackends(ic, ls, nodes)
+		UpdateBackends(ic, ls, nodes)
 	}
 
 	if err != nil {

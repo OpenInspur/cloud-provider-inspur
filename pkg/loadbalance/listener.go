@@ -2,7 +2,6 @@ package loadbalance
 
 import (
 	"fmt"
-	"github.com/inspur/inspur-cloud-controller-manager/pkg/incloud"
 
 	corev1 "k8s.io/api/core/v1"
 )
