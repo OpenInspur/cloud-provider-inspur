@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"strings"
 	"time"
+	"bytes"
 )
 
 type CreateOptsBuilder interface {
@@ -193,5 +194,85 @@ func modifyListener(url, token, listenerid string, opts CreateListenerOpts) (*Li
 }
 
 func createBackend(url, token string, opts CreateBackendOpts) (*BackendList, error) {
-	return nil, nil
+	tr := &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+	}
+	client := &http.Client{Transport: tr}
+	reqUrl := url + "/" + opts.SLBId+"/listeners/"+opts.ListenerId+"/members"
+	serversByte,err := json.Marshal(&opts.Servers)
+	if nil != err {
+		glog.Errorf("servers conver to bytes error %v", err)
+		return nil,err
+	}
+	req, err := http.NewRequest("POST", reqUrl, bytes.NewReader(serversByte))
+	if err != nil {
+		glog.Errorf("Request error %v", err)
+		return nil, err
+	}
+	req.Header.Set("Content-Type", "text/plain")
+	req.Header.Set("Authorization", token)
+	req.Header.Set("Date", time.Now().UTC().Format(time.RFC1123))
+	res, err := client.Do(req)
+	if err != nil {
+		glog.Errorf("Response error %v", err)
+		return nil, err
+	}
+	defer res.Body.Close()
+	body, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		glog.Errorf("Get response body fail %v", err)
+		return nil, err
+	}
+	if res.StatusCode != http.StatusOK {
+		glog.Errorf("response not ok %v", res.StatusCode)
+		return nil, fmt.Errorf("response not ok %d", res.StatusCode)
+	}
+	var result BackendList
+	err = xml.Unmarshal(body, &result)
+	if err != nil {
+		glog.Errorf("Unmarshal body fail: %v", err)
+		return nil, err
+	}
+	return &result, nil
 }
+
+func describeBackendservers(url, token ,slbId, listnerId string)([]Backend,error){
+
+	tr := &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+	}
+	client := &http.Client{Transport: tr}
+	reqUrl := url + "/" + slbId+"/listeners/"+listnerId+"/members"
+	req, err := http.NewRequest("GET", reqUrl, nil)
+	if err != nil {
+		glog.Errorf("Request error %v", err)
+		return nil, err
+	}
+	req.Header.Set("Content-Type", "text/plain")
+	req.Header.Set("Authorization", token)
+	req.Header.Set("Date", time.Now().UTC().Format(time.RFC1123))
+	res, err := client.Do(req)
+	if err != nil {
+		glog.Errorf("Response error %v", err)
+		return nil, err
+	}
+	defer res.Body.Close()
+	body, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		glog.Errorf("Get response body fail %v", err)
+		return nil, err
+	}
+	if res.StatusCode != http.StatusOK {
+		glog.Errorf("response not ok %v", res.StatusCode)
+		return nil, fmt.Errorf("response not ok %d", res.StatusCode)
+	}
+	var result []Backend
+	err = xml.Unmarshal(body, &result)
+	if err != nil {
+		glog.Errorf("Unmarshal body fail: %v", err)
+		return nil, err
+	}
+	return result, nil
+
+}
+

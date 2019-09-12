@@ -3,12 +3,15 @@ package loadbalance
 import (
 	"fmt"
 	_ "k8s.io/api/core/v1"
+	"github.com/golang/glog"
+	"k8s.io/api/core/v1"
 )
 
 var ErrorBackendNotFound = fmt.Errorf("Cannot find backend")
 
 type Backend struct {
 	BackendId   string `json:"backendId"`
+
 	ListenerId  string `json:"listenerId"`
 	ServerId    string `json:"ServerId"`
 	Port        int    `json:"port"`
@@ -48,6 +51,48 @@ func CreateBackend(config *InCloud, opts CreateBackendOpts) (*BackendList, error
 }
 
 func UpdateBackends(config *InCloud, listener *Listener, backends interface{}) error {
+
+	//先查询listenner关联的backends
+	token, error := getKeyCloakToken(config.RequestedSubject, config.TokenClientID, config.ClientSecret, config.KeycloakUrl)
+	if error != nil {
+		return error
+	}
+	backs,error := describeBackendservers(config.LbUrlPre,token,listener.SLBId,listener.ListenerId)
+	if error != nil {
+		glog.Infof("describeBackendservers failed ", error)
+		return error
+	}
+	nodes := backends.([]*v1.Node)
+	//剔除nodes里面已经存在的backend
+	for index,node := range nodes {
+		for i,b := range backs {
+			if b.ServerName == node.Name {
+				nodes = append(nodes[:index],nodes[index+1:]...)
+				backs = append(backs[:i],backs[i+1:]...)
+			}
+		}
+	}
+	var bs []*BackendServer
+	//根据nodes创建backend
+	for in,nod := range nodes {
+		server := new(BackendServer)
+		server.ServerId =  (string)(nod.UID)
+		server.ServerName = nod.Name
+		server.ServierType = "ECS"
+		server.Weight = 10
+		bs[in] = server
+	}
+	opts :=  CreateBackendOpts {
+		SLBId:listener.SLBId,
+		ListenerId:listener.ListenerId,
+		Servers:bs,
+	}
+
+	_,err := CreateBackend(config,opts)
+	if nil != err {
+		glog.Infof("createBackend failed: ", err)
+		return err
+	}
 	//nodes, ok := backends.([]*v1.Node)
 	//if !ok {
 	//	glog.Infof("skip default server group update for type %s", reflect.TypeOf(backends))
