@@ -70,6 +70,21 @@ func GetLoadBalancer(config *InCloud) (*LoadBalancer, error) {
 	return lb, nil
 }
 
+func ModifyLoadBalancer(config *InCloud,slbName string)(*SlbResponse,error){
+	token, error := getKeyCloakToken(config.RequestedSubject, config.TokenClientID, config.ClientSecret, config.KeycloakUrl)
+	if error != nil {
+		return nil, error
+	}
+	slbResponse,err := modifyLoadBalancer(config.LbUrlPre,token,config.LbId,slbName)
+	if err != nil {
+		return nil, err
+	}
+	if slbResponse == nil {
+		return nil, ErrorNotFoundInCloud
+	}
+	return slbResponse,nil
+}
+
 //// CreateQingCloudLB do create a lb in incloud
 //func (l *LoadBalancer) CreateQingCloudLB() error {
 //	err := l.EnsureEIP()

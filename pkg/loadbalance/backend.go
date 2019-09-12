@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/golang/glog"
 	"k8s.io/api/core/v1"
+	"time"
 	_ "k8s.io/api/core/v1"
 	"reflect"
 )
@@ -41,6 +42,27 @@ type BackendList struct {
 	code    string           `json:"code"`
 	Message string           `json:"message"`
 	Data    []*BackendServer `json:"data"`
+}
+
+type SlbResponse struct {
+	RegionId string `json:"regionId"`
+	CreatedTime time.Time `json:"createdTime"`
+	ExpiredTime time.Time `json:"expiredTime"`
+	SpecificationId string `json:"specificationId"`
+	SpecificationName string `json:"specificationName"`
+	SlbId string `json:"slbId"`
+	SlbName string `json:"slbName"`
+	Scheme string   `json:"scheme"`
+	BusinessIp string `json:"businessIp"`
+	VpcId string `json:"vpcId"`
+	SubnetId string `json:"subnetId"`
+	EipId string `json:"eipId"`
+	EipAddress string `json:"eipAddress"`
+	ListenerCount int `json:"listenerCount"`
+	ChargeType string `json:"chargeType"`
+	PurchaseTime string `json:"purchaseTime"`
+	Type string `json:"type"`
+	State string `json:"state"`
 }
 
 func CreateBackends(config *InCloud, opts CreateBackendOpts) (*BackendList, error) {
