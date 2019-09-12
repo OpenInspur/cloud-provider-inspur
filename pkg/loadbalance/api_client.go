@@ -1,6 +1,7 @@
 package loadbalance
 
 import (
+	"bytes"
 	"crypto/tls"
 	"encoding/json"
 	"encoding/xml"
@@ -11,7 +12,6 @@ import (
 	"net/http"
 	"strings"
 	"time"
-	"bytes"
 )
 
 type CreateOptsBuilder interface {
@@ -198,11 +198,11 @@ func createBackend(url, token string, opts CreateBackendOpts) (*BackendList, err
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 	}
 	client := &http.Client{Transport: tr}
-	reqUrl := url + "/" + opts.SLBId+"/listeners/"+opts.ListenerId+"/members"
-	serversByte,err := json.Marshal(&opts.Servers)
+	reqUrl := url + "/" + opts.SLBId + "/listeners/" + opts.ListenerId + "/members"
+	serversByte, err := json.Marshal(&opts.Servers)
 	if nil != err {
 		glog.Errorf("servers conver to bytes error %v", err)
-		return nil,err
+		return nil, err
 	}
 	req, err := http.NewRequest("POST", reqUrl, bytes.NewReader(serversByte))
 	if err != nil {
@@ -236,13 +236,13 @@ func createBackend(url, token string, opts CreateBackendOpts) (*BackendList, err
 	return &result, nil
 }
 
-func describeBackendservers(url, token ,slbId, listnerId string)([]Backend,error){
+func describeBackendservers(url, token, slbId, listnerId string) ([]Backend, error) {
 
 	tr := &http.Transport{
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 	}
 	client := &http.Client{Transport: tr}
-	reqUrl := url + "/" + slbId+"/listeners/"+listnerId+"/members"
+	reqUrl := url + "/" + slbId + "/listeners/" + listnerId + "/members"
 	req, err := http.NewRequest("GET", reqUrl, nil)
 	if err != nil {
 		glog.Errorf("Request error %v", err)
@@ -276,3 +276,6 @@ func describeBackendservers(url, token ,slbId, listnerId string)([]Backend,error
 
 }
 
+func removeBackendServers(url, token, slbId, listenerId string) error {
+	return nil
+}
