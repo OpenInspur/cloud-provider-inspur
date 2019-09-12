@@ -12,7 +12,6 @@ var ErrorBackendNotFound = fmt.Errorf("Cannot find backend")
 
 type Backend struct {
 	BackendId string `json:"backendId"`
-
 	ListenerId  string `json:"listenerId"`
 	ServerId    string `json:"ServerId"`
 	Port        int    `json:"port"`
@@ -97,7 +96,6 @@ func UpdateBackends(config *InCloud, listener *Listener, backends interface{}) e
 				found = true
 				break
 			}
-
 		}
 		if !found {
 			server := new(BackendServer)
@@ -131,16 +129,25 @@ func UpdateBackends(config *InCloud, listener *Listener, backends interface{}) e
 			del = append(del, back.ServerId)
 		}
 	}
-	DeleteBackends(config, listener.ListenerId, del)
-	if nil != err {
-		glog.Infof("DeleteBackends failed: ", err)
-		return err
+	if len(del) > 0 {
+		DeleteBackends(config, listener.ListenerId, del)
+		if nil != err {
+			glog.Infof("DeleteBackends failed: ", err)
+			return err
+		}
 	}
 	return nil
 }
 
 func DeleteBackends(config *InCloud, listenerId string, backendIdList []string) error {
-	return nil
+
+	token, error := getKeyCloakToken(config.RequestedSubject, config.TokenClientID, config.ClientSecret, config.KeycloakUrl)
+	if error != nil {
+		return error
+	}
+	error = removeBackendServers(config.LbUrlPre, token, config.LbId,listenerId,backendIdList)
+
+	return error
 }
 
 func NewBackendList(lb *LoadBalancer, listener *Listener) *BackendList {

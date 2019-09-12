@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"strings"
 	"time"
+	"strconv"
 )
 
 type CreateOptsBuilder interface {
@@ -399,6 +400,50 @@ func describeBackendservers(url, token, slbId, listnerId string) ([]Backend, err
 
 }
 
-func removeBackendServers(url, token, slbId, listenerId string) error {
+func removeBackendServers(url, token, slbId , listnerId string, backendIdList []string) error {
+
+	tr := &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+	}
+	client := &http.Client{Transport: tr}
+	backendByte,err := json.Marshal(&backendIdList)
+	if err != nil {
+		glog.Errorf("parse json error %v", err)
+		return err
+	}
+	reqUrl := url + "/" + slbId + "/listeners/" + listnerId + "/members" + "?backendIdList=" + string(backendByte)
+	req, err := http.NewRequest("DELETE", reqUrl, nil)
+	if err != nil {
+		glog.Errorf("Request error %v", err)
+		return err
+	}
+	req.Header.Set("Content-Type", "text/plain")
+	req.Header.Set("Authorization", token)
+	req.Header.Set("Date", time.Now().UTC().Format(time.RFC1123))
+	res, err := client.Do(req)
+	if err != nil {
+		glog.Errorf("Response error %v", err)
+		return err
+	}
+	defer res.Body.Close()
+	body, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		glog.Errorf("Get response body fail %v", err)
+		return  err
+	}
+	if res.StatusCode != http.StatusOK {
+		glog.Errorf("response not ok %v", res.StatusCode)
+		return fmt.Errorf("response not ok %d", res.StatusCode)
+	}
+	var result BackendList
+	err = xml.Unmarshal(body, &result)
+	if err != nil {
+		glog.Errorf("Unmarshal body fail: %v", err)
+		return  err
+	}
+	if result.code != strconv.Itoa(http.StatusOK) {
+		glog.Errorf("Delete backend fail: %v", result.Message)
+		return errors.New(result.Message)
+	}
 	return nil
 }
