@@ -151,25 +151,89 @@ func (ic *InCloud) UpdateLoadBalancer(ctx context.Context, clusterName string, s
 	startTime := time.Now()
 	defer func() {
 		elapsed := time.Since(startTime)
-		glog.V(1).Infof("EnsureLoadBalancer takes total %d seconds", elapsed/time.Second)
+		glog.V(1).Infof("UpdateLoadBalancer takes total %d seconds", elapsed/time.Second)
 	}()
 
-	glog.V(4).Infof("EnsureLoadBalancer(%v, %v, %v, %v, %v, %v, %v)", clusterName, service.Namespace, service.Name,
+	glog.V(4).Infof("UpdateLoadBalancer(%v, %v, %v, %v, %v, %v, %v)", clusterName, service.Namespace, service.Name,
 		service.Spec.LoadBalancerIP, service.Spec.Ports, nodes, service.Annotations)
 
 	if len(nodes) == 0 {
 		return  fmt.Errorf("there are no available nodes for LoadBalancer service %s/%s", service.Namespace, service.Name)
 	}
 
+	//forwardRule := getStringFromServiceAnnotation(service, ServiceAnnotationLoadBalancerForwardRule, "RR")
+	//healthCheck := getStringFromServiceAnnotation(service, ServiceAnnotationLoadBalancerHealthCheck, "0")
+	//hc, _ := strconv.ParseBool(healthCheck)
+	//
+	//ports := service.Spec.Ports
+	//if len(ports) == 0 {
+	//	return fmt.Errorf("no ports provided to openstack load balancer")
+	//}
+
+	slbResponse,err := ModifyLoadBalancer(ic,loadBalancerName)
+
+	ls, err := GetListeners(ic)
+	//verify scheme 负载均衡的网络模式，默认参数：internet-facing：公网（默认）internal：内网
+
 	forwardRule := getStringFromServiceAnnotation(service, ServiceAnnotationLoadBalancerForwardRule, "RR")
 	healthCheck := getStringFromServiceAnnotation(service, ServiceAnnotationLoadBalancerHealthCheck, "0")
 	hc, _ := strconv.ParseBool(healthCheck)
 
+	//verify ports
 	ports := service.Spec.Ports
 	if len(ports) == 0 {
-		return fmt.Errorf("no ports provided to openstack load balancer")
+		return  fmt.Errorf("no ports provided for inspur load balancer")
 	}
-	lb,err := GetLoadBalancer(ic)
+	//create/update Listener
+	for portIndex, port := range ports {
+		listener := GetListenerForPort(ls, port)
+		//port not assigned
+		if listener == nil {
+			glog.V(4).Infof("Creating listener for port %d", int(port.Port))
+			listener, err = CreateListener(ic, CreateListenerOpts{
+				SLBId:         slbResponse.SlbId,
+				ListenerName:  fmt.Sprintf("listener_%s_%d", slbResponse.SlbId, portIndex),
+				Protocol:      Protocol(port.Protocol),
+				Port:          port.Port,
+				ForwardRule:   forwardRule,
+				IsHealthCheck: hc,
+			})
+			if err != nil {
+				// Unknown error, retry later
+				return fmt.Errorf("error creating LB listener: %v", err)
+			}
+
+		} else {
+			//TODO:
+			_, erro := UpdateListener(ic, listener.ListenerId, CreateListenerOpts{
+				SLBId:         slbResponse.SlbId,
+				ListenerName:  fmt.Sprintf("listener_%s_%d", slbResponse.SlbId, portIndex),
+				Protocol:      Protocol(port.Protocol),
+				Port:          port.Port,
+				ForwardRule:   forwardRule,
+				IsHealthCheck: hc,
+			})
+			if erro != nil {
+				return fmt.Errorf("Error updating LB listener: %v", err)
+			}
+
+		}
+		ls, err := GetListener(ic, listener.ListenerId)
+		if err != nil {
+			return fmt.Errorf("failed to get LB listener %v: %v", ls.SLBId, ls.ListenerId)
+		}
+		UpdateBackends(ic, ls, nodes)
+	}
+
+	if err != nil {
+		return  err
+	}
+	//status := &v1.LoadBalancerStatus{}
+	//status.Ingress = []v1.LoadBalancerIngress{{IP: slbResponse.BusinessIp}}
+	//if slbResponse.EipAddress != "" {
+	//	status.Ingress = append(status.Ingress, v1.LoadBalancerIngress{IP: slbResponse.EipAddress})
+	//}
+	return  nil
 
 	//startTime := time.Now()
 	//defer func() {
