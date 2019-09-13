@@ -259,9 +259,6 @@ func (ic *InCloud) UpdateLoadBalancer(ctx context.Context, clusterName string, s
 	//	listener.UpdateListener()
 	//}
 
-
-
-	return nil
 }
 
 // EnsureLoadBalancerDeleted deletes the specified load balancer if it
@@ -273,6 +270,72 @@ func (ic *InCloud) UpdateLoadBalancer(ctx context.Context, clusterName string, s
 // Implementations must treat the *v1.Service parameter as read-only and not modify it.
 // Parameter 'clusterName' is the name of the cluster as presented to kube-controller-manager
 func (ic *InCloud) EnsureLoadBalancerDeleted(ctx context.Context, clusterName string, service *v1.Service) error {
+
+	glog.V(4).Infof("EnsureLoadBalancerDeleted(%v, %v)", clusterName, service.Name)
+
+	startTime := time.Now()
+	defer func() {
+		elapsed := time.Since(startTime)
+		glog.V(1).Infof("EnsureLoadBalancerDeleted takes total %d seconds", elapsed/time.Second)
+	}()
+
+	glog.V(4).Infof("EnsureLoadBalancerDeleted(%v, %v, %v, %v, %v, %v)", clusterName, service.Namespace, service.Name,
+		service.Spec.LoadBalancerIP, service.Spec.Ports, service.Annotations)
+
+	lb,error := GetLoadBalancer(ic)
+	if error != nil {
+		glog.V(4).Infof("GetLoadBalancer fail , error :", error)
+		return error
+	}
+	if nil == lb {
+		glog.V(4).Infof("there is no such loadbalancer")
+		return nil
+	}
+	ls, err := GetListeners(ic)
+	if err != nil {
+		glog.V(4).Infof("get ls fail ,error : ",err)
+		return err
+	}
+	////verify scheme 负载均衡的网络模式，默认参数：internet-facing：公网（默认）internal：内网
+	//
+	//forwardRule := getStringFromServiceAnnotation(service, ServiceAnnotationLoadBalancerForwardRule, "RR")
+	//healthCheck := getStringFromServiceAnnotation(service, ServiceAnnotationLoadBalancerHealthCheck, "0")
+	//hc, _ := strconv.ParseBool(healthCheck)
+
+	//verify ports
+	ports := service.Spec.Ports
+	if len(ports) == 0 {
+		return  fmt.Errorf("no ports provided for inspur load balancer")
+	}
+	//the delete order : backend,ls,lb
+	for _, port := range ports {
+		listener := GetListenerForPort(ls, port)
+		//port not assigned
+		if listener != nil {
+			backends,err := GetBackends(ic,listener.ListenerId)
+			if nil != err {
+				glog.V(4).Infof("getBackens fail ,error : ",err )
+				return err
+			}
+			if nil != backends {
+				var backStringList []string
+				for _, backend := range backends {
+					backStringList = append(backStringList,backend.ServerId)
+				}
+				DeleteBackends(ic, listener.ListenerId,backStringList)
+			}
+			error = listener.DeleteListener(ic)
+			if nil != error {
+				glog.V(4).Infof("DeleteListener fail ,error : ",err )
+				return err
+			}
+		}
+	}
+	err = DeleteLoadBalancer(ic)
+	if nil != err {
+		glog.V(4).Infof("DeleteListener fail ,error : ",err )
+		return err
+	}
 	//startTime := time.Now()
 	//defer func() {
 	//	elapsed := time.Since(startTime)

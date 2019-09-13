@@ -85,6 +85,14 @@ func ModifyLoadBalancer(config *InCloud,slbName string)(*SlbResponse,error){
 	return slbResponse,nil
 }
 
+func DeleteLoadBalancer(config *InCloud)error{
+	token, error := getKeyCloakToken(config.RequestedSubject, config.TokenClientID, config.ClientSecret, config.KeycloakUrl)
+	if error != nil {
+		return error
+	}
+	error = deleteLoadBalancer(config.LbUrlPre,token,config.LbId)
+	return error
+}
 //// CreateQingCloudLB do create a lb in incloud
 //func (l *LoadBalancer) CreateQingCloudLB() error {
 //	err := l.EnsureEIP()

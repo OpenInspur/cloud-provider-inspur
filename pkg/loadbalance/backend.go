@@ -150,6 +150,19 @@ func DeleteBackends(config *InCloud, listenerId string, backendIdList []string) 
 	return error
 }
 
+func GetBackends(config *InCloud, listenerId string)([]Backend,error){
+	token, error := getKeyCloakToken(config.RequestedSubject, config.TokenClientID, config.ClientSecret, config.KeycloakUrl)
+	if error != nil {
+		return nil,error
+	}
+	backends, error := describeBackendservers(config.LbUrlPre, token, config.LbId,listenerId)
+	if nil != error {
+		glog.Infof("GetBackends failed: ", error)
+		return nil,error
+	}
+	return backends,nil
+}
+
 func NewBackendList(lb *LoadBalancer, listener *Listener) *BackendList {
 	//list := make([]*Backend, 0)
 	//instanceIDs := lb.GetNodesInstanceIDs()

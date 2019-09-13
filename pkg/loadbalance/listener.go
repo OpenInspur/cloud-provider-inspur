@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/klog"
 )
 
 type Protocol string
@@ -178,7 +179,16 @@ func (l *Listener) CreateListener() error {
 	return nil
 }
 
-func (l *Listener) DeleteListener() error {
+func (l *Listener) DeleteListener(config *InCloud) error {
+
+	token, error := getKeyCloakToken(config.RequestedSubject, config.TokenClientID, config.ClientSecret, config.KeycloakUrl)
+	if error != nil {
+		return error
+	}
+	error = deleteListener(config.LbUrlPre, token, config.LbId,l.ListenerId)
+	if nil != error {
+		klog.Error("Deleting LoadBalancerListener :'%s'", error.Error())
+	}
 	//if l.Status == nil {
 	//	return fmt.Errorf("Could not delete noexit listener")
 	//}
