@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"github.com/golang/glog"
-	"k8s.io/klog"
 	"strconv"
 	"time"
 
@@ -22,7 +21,7 @@ const (
 
 // LoadBalancer returns an implementation of LoadBalancer for InCloud.
 func (ic *InCloud) LoadBalancer() (cloudprovider.LoadBalancer, bool) {
-	klog.V(4).Info("LoadBalancer() called")
+	glog.V(4).Info("LoadBalancer() called")
 	return ic, true
 }
 
@@ -32,7 +31,7 @@ func (ic *InCloud) GetLoadBalancer(ctx context.Context, clusterName string, serv
 	//TODO 此处约定为创建集群时loadbalancer slbid注入到cloud-config中
 	lb, err := GetLoadBalancer(ic)
 	if err != nil {
-		klog.Errorf("Failed to call 'GetLoadBalancer' of service %s,slb Id:%s", service.Name, lb.SlbId)
+		glog.Errorf("Failed to call 'GetLoadBalancer' of service %s,slb Id:%s", service.Name, lb.SlbId)
 		return nil, false, err
 	}
 
@@ -47,7 +46,12 @@ func (ic *InCloud) GetLoadBalancer(ctx context.Context, clusterName string, serv
 // GetLoadBalancerName returns the name of the load balancer. Implementations must treat the
 // *v1.Service parameter as read-only and not modify it.
 func (ic *InCloud) GetLoadBalancerName(_ context.Context, clusterName string, service *v1.Service) string {
-	return GetLoadBalancerName(clusterName, service)
+	lb, err := GetLoadBalancer(ic)
+	if err != nil {
+		glog.Error("Failed to GetLoadBalancer by config:%v", ic)
+		return ""
+	}
+	return lb.SlbName
 }
 
 // EnsureLoadBalancer creates a new load balancer 'name', or updates the existing one. Returns the status of the balancer
@@ -72,7 +76,7 @@ func (ic *InCloud) EnsureLoadBalancer(ctx context.Context, clusterName string, s
 
 	lb, err := GetLoadBalancer(ic)
 	if err != nil {
-		klog.Errorf("Failed to get lb by slbId:%s in incloud of service %s", lb.SlbId, service.Name)
+		glog.Errorf("Failed to get lb by slbId:%s in incloud of service %s", lb.SlbId, service.Name)
 		return nil, err
 	}
 	ls, err := GetListeners(ic)
@@ -125,12 +129,12 @@ func (ic *InCloud) EnsureLoadBalancer(ctx context.Context, clusterName string, s
 		if err != nil {
 			return nil, fmt.Errorf("failed to get LB listener %v: %v", ls.SLBId, ls.ListenerId)
 		}
-		UpdateBackends(ic, ls, nodes)
+		err = UpdateBackends(ic, ls, nodes)
+		if err != nil {
+			return nil, err
+		}
 	}
 
-	if err != nil {
-		return nil, err
-	}
 	status := &v1.LoadBalancerStatus{}
 	status.Ingress = []v1.LoadBalancerIngress{{IP: lb.BusinessIp}}
 	if lb.EipAddress != "" {
@@ -144,9 +148,12 @@ func (ic *InCloud) EnsureLoadBalancer(ctx context.Context, clusterName string, s
 // parameters as read-only and not modify them.
 // Parameter 'clusterName' is the name of the cluster as presented to kube-controller-manager
 func (ic *InCloud) UpdateLoadBalancer(ctx context.Context, clusterName string, service *v1.Service, nodes []*v1.Node) error {
-
-	loadBalancerName := GetLoadBalancerName(clusterName,service)
-	glog.V(4).Infof("UpdateLoadBalancer(%v, %v, %v)", clusterName, loadBalancerName, nodes)
+	lb, err := GetLoadBalancer(ic)
+	if err != nil {
+		glog.Error("Failed to GetLoadBalancer by %v", ic)
+		return err
+	}
+	glog.V(4).Infof("UpdateLoadBalancer(%v, %v, %v)", clusterName, lb.SlbName, nodes)
 
 	startTime := time.Now()
 	defer func() {
@@ -158,19 +165,10 @@ func (ic *InCloud) UpdateLoadBalancer(ctx context.Context, clusterName string, s
 		service.Spec.LoadBalancerIP, service.Spec.Ports, nodes, service.Annotations)
 
 	if len(nodes) == 0 {
-		return  fmt.Errorf("there are no available nodes for LoadBalancer service %s/%s", service.Namespace, service.Name)
+		return fmt.Errorf("there are no available nodes for LoadBalancer service %s/%s", service.Namespace, service.Name)
 	}
 
-	//forwardRule := getStringFromServiceAnnotation(service, ServiceAnnotationLoadBalancerForwardRule, "RR")
-	//healthCheck := getStringFromServiceAnnotation(service, ServiceAnnotationLoadBalancerHealthCheck, "0")
-	//hc, _ := strconv.ParseBool(healthCheck)
-	//
-	//ports := service.Spec.Ports
-	//if len(ports) == 0 {
-	//	return fmt.Errorf("no ports provided to openstack load balancer")
-	//}
-
-	slbResponse,err := ModifyLoadBalancer(ic,loadBalancerName)
+	//修改负载均衡信息，目前只支持修改名称。
 
 	ls, err := GetListeners(ic)
 	//verify scheme 负载均衡的网络模式，默认参数：internet-facing：公网（默认）internal：内网
@@ -182,7 +180,7 @@ func (ic *InCloud) UpdateLoadBalancer(ctx context.Context, clusterName string, s
 	//verify ports
 	ports := service.Spec.Ports
 	if len(ports) == 0 {
-		return  fmt.Errorf("no ports provided for inspur load balancer")
+		return fmt.Errorf("no ports provided for inspur load balancer")
 	}
 	//create/update Listener
 	for portIndex, port := range ports {
@@ -191,8 +189,8 @@ func (ic *InCloud) UpdateLoadBalancer(ctx context.Context, clusterName string, s
 		if listener == nil {
 			glog.V(4).Infof("Creating listener for port %d", int(port.Port))
 			listener, err = CreateListener(ic, CreateListenerOpts{
-				SLBId:         slbResponse.SlbId,
-				ListenerName:  fmt.Sprintf("listener_%s_%d", slbResponse.SlbId, portIndex),
+				SLBId:         lb.SlbId,
+				ListenerName:  fmt.Sprintf("listener_%s_%d", lb.SlbId, portIndex),
 				Protocol:      Protocol(port.Protocol),
 				Port:          port.Port,
 				ForwardRule:   forwardRule,
@@ -206,8 +204,8 @@ func (ic *InCloud) UpdateLoadBalancer(ctx context.Context, clusterName string, s
 		} else {
 			//TODO:
 			_, erro := UpdateListener(ic, listener.ListenerId, CreateListenerOpts{
-				SLBId:         slbResponse.SlbId,
-				ListenerName:  fmt.Sprintf("listener_%s_%d", slbResponse.SlbId, portIndex),
+				SLBId:         lb.SlbId,
+				ListenerName:  fmt.Sprintf("listener_%s_%d", lb.SlbId, portIndex),
 				Protocol:      Protocol(port.Protocol),
 				Port:          port.Port,
 				ForwardRule:   forwardRule,
@@ -226,14 +224,14 @@ func (ic *InCloud) UpdateLoadBalancer(ctx context.Context, clusterName string, s
 	}
 
 	if err != nil {
-		return  err
+		return err
 	}
 	//status := &v1.LoadBalancerStatus{}
 	//status.Ingress = []v1.LoadBalancerIngress{{IP: slbResponse.BusinessIp}}
 	//if slbResponse.EipAddress != "" {
 	//	status.Ingress = append(status.Ingress, v1.LoadBalancerIngress{IP: slbResponse.EipAddress})
 	//}
-	return  nil
+	return nil
 
 	//startTime := time.Now()
 	//defer func() {
@@ -259,8 +257,6 @@ func (ic *InCloud) UpdateLoadBalancer(ctx context.Context, clusterName string, s
 	//	listener.UpdateListener()
 	//}
 
-
-
 	return nil
 }
 
@@ -276,7 +272,7 @@ func (ic *InCloud) EnsureLoadBalancerDeleted(ctx context.Context, clusterName st
 	//startTime := time.Now()
 	//defer func() {
 	//	elapsed := time.Since(startTime)
-	//	klog.V(1).Infof("DeleteLoadBalancer takes total %d seconds", elapsed/time.Second)
+	//	glog.V(1).Infof("DeleteLoadBalancer takes total %d seconds", elapsed/time.Second)
 	//}()
 	//lb, _ := ic.genLoadBalancer(ctx, clusterName, service, nil, true)
 	//return lb.DeleteQingCloudLB()

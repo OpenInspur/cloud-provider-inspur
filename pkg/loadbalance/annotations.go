@@ -12,12 +12,6 @@ const (
 	// of them being set
 	ServiceAnnotationLoadBalancerEipIds = "service.beta.kubernetes.io/incloud-load-balancer-eip-ids"
 
-	// ServiceAnnotationLoadBalancerVxnetId is the annotation which indicates the very vxnet where load
-	// balancer resides. This annotation should NOT be used when ServiceAnnotationLoadBalancerEipIds is
-	// set.
-
-	ServiceAnnotationLoadBalancerVxnetID = "service.beta.kubernetes.io/incloud-load-balancer-vxnet-id"
-
 	// ServiceAnnotationLoadBalancerType is the annotation used on the
 	// service to indicate that we want a incloud loadBalancer type.
 	// value "0" means the LB can max support 5000 concurrency connections, it's default type.
@@ -32,16 +26,4 @@ const (
 	// reuse represent the EIP can be shared with other service which has no port conflict
 	// exclusive is the default value, means every service has its own EIP
 	ServiceAnnotationLoadBalancerEipStrategy = "service.beta.kubernetes.io/incloud-load-balancer-eip-strategy"
-
-	ServiceAnnotationLoadBalancerEipSource = "service.beta.kubernetes.io/incloud-load-balancer-eip-source"
-
-	// ReuseEIP represent the EIP can be shared with other service which has no port conflict
-	ReuseEIP EIPStrategy = "reuse"
-	// Exclusive is the default value, means every service has its own EIP
-	Exclusive EIPStrategy = "exclusive"
-
-	ManualSet                 EIPAllocateSource = "manual"
-	UseAvailableOrAllocateOne EIPAllocateSource = "auto"
-	UseAvailableOnly          EIPAllocateSource = "use-available"
-	AllocateOnly              EIPAllocateSource = "allocate"
 )

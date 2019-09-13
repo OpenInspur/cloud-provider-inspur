@@ -10,9 +10,9 @@ import (
 	"github.com/golang/glog"
 	"io/ioutil"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
-	"strconv"
 )
 
 type CreateOptsBuilder interface {
@@ -109,7 +109,7 @@ func describeLoadBalancer(url, token, slbId string) (*LoadBalancer, error) {
 	return &result[0], nil
 }
 
-func modifyLoadBalancer(url, token, slbId , slbName string)(*SlbResponse,error){
+func modifyLoadBalancer(url, token, slbId, slbName string) (*SlbResponse, error) {
 	tr := &http.Transport{
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 	}
@@ -117,10 +117,10 @@ func modifyLoadBalancer(url, token, slbId , slbName string)(*SlbResponse,error){
 	reqUrl := url + "/" + slbId
 	requestMap := make(map[string]string)
 	requestMap["slbName"] = slbName
-	slbNameByte,err := json.Marshal(&requestMap)
+	slbNameByte, err := json.Marshal(&requestMap)
 	if nil != err {
 		glog.Errorf("servers conver to bytes error %v", err)
-		return nil,err
+		return nil, err
 	}
 	req, err := http.NewRequest("PUT", reqUrl, bytes.NewReader(slbNameByte))
 	if err != nil {
@@ -235,11 +235,11 @@ func createListener(url, token string, opts CreateListenerOpts) (*Listener, erro
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 	}
 	client := &http.Client{Transport: tr}
-	reqUrl := url + "/" + opts.SLBId+"/listeners/"
-	serversByte,err := json.Marshal(&opts)
+	reqUrl := url + "/" + opts.SLBId + "/listeners/"
+	serversByte, err := json.Marshal(&opts)
 	if nil != err {
 		glog.Errorf("opts conver to bytes error %v", err)
-		return nil,err
+		return nil, err
 	}
 	req, err := http.NewRequest("POST", reqUrl, bytes.NewReader(serversByte))
 	if err != nil {
@@ -279,11 +279,11 @@ func modifyListener(url, token, listenerid string, opts CreateListenerOpts) (*Li
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 	}
 	client := &http.Client{Transport: tr}
-	reqUrl := url + "/" + opts.SLBId+"/listeners/"+listenerid
-	serversByte,err := json.Marshal(&opts)
+	reqUrl := url + "/" + opts.SLBId + "/listeners/" + listenerid
+	serversByte, err := json.Marshal(&opts)
 	if nil != err {
 		glog.Errorf("opts conver to bytes error %v", err)
-		return nil,err
+		return nil, err
 	}
 	req, err := http.NewRequest("PUT", reqUrl, bytes.NewReader(serversByte))
 	if err != nil {
@@ -400,13 +400,13 @@ func describeBackendservers(url, token, slbId, listnerId string) ([]Backend, err
 
 }
 
-func removeBackendServers(url, token, slbId , listnerId string, backendIdList []string) error {
+func removeBackendServers(url, token, slbId, listnerId string, backendIdList []string) error {
 
 	tr := &http.Transport{
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 	}
 	client := &http.Client{Transport: tr}
-	backendByte,err := json.Marshal(&backendIdList)
+	backendByte, err := json.Marshal(&backendIdList)
 	if err != nil {
 		glog.Errorf("parse json error %v", err)
 		return err
@@ -429,7 +429,7 @@ func removeBackendServers(url, token, slbId , listnerId string, backendIdList []
 	body, err := ioutil.ReadAll(res.Body)
 	if err != nil {
 		glog.Errorf("Get response body fail %v", err)
-		return  err
+		return err
 	}
 	if res.StatusCode != http.StatusOK {
 		glog.Errorf("response not ok %v", res.StatusCode)
@@ -439,7 +439,7 @@ func removeBackendServers(url, token, slbId , listnerId string, backendIdList []
 	err = xml.Unmarshal(body, &result)
 	if err != nil {
 		glog.Errorf("Unmarshal body fail: %v", err)
-		return  err
+		return err
 	}
 	if result.code != strconv.Itoa(http.StatusOK) {
 		glog.Errorf("Delete backend fail: %v", result.Message)
