@@ -22,14 +22,12 @@ spec:
       containers:
         - name: incloud-cloud-controller-manager
           image: registry.inspurcloud.cn:5000/csf/cloud-controller-manager
-          imagePullPolicy: Always
+          imagePullPolicy: IfNotPresent
           command:
             - /manager
             - --v=3
             - --cloud-provider=incloud
             - --cloud-config=/etc/kubernetes/cloud-config
-            - --kubeconfig=/etc/kubernetes/node-kubeconfig.yaml
-            - --use-service-account-credentials=true
           resources:
             requests:
               cpu: 200m
