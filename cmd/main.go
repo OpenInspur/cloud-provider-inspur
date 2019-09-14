@@ -5,8 +5,8 @@
 package main
 
 import (
-	"flag"
 	"fmt"
+	"k8s.io/apiserver/pkg/server/healthz"
 	"math/rand"
 	"os"
 	"time"
@@ -16,12 +16,13 @@ import (
 
 	// NOTE: Importing all in-tree cloud-providers is not required when
 	// implementing an out-of-tree cloud-provider.
-	_ "k8s.io/kubernetes/pkg/util/prometheusclientgo" // load all the prometheus client-go plugins
-	_ "k8s.io/kubernetes/pkg/version/prometheus"      // for version metric registration
+	_ "github.com/inspur/inspur-cloud-controller-manager/pkg/loadbalance" //pre load loadbalance incloud init
+	_ "k8s.io/kubernetes/pkg/util/prometheusclientgo"                     // load all the prometheus client-go plugins
+	_ "k8s.io/kubernetes/pkg/version/prometheus"                          // for version metric registration
 )
 
 func init() {
-	_ = flag.String("cloud-provider-gce-lb-src-cidrs", "", "flag of bug")
+	healthz.DefaultHealthz()
 }
 func main() {
 	rand.Seed(time.Now().UnixNano())
