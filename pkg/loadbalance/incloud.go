@@ -6,12 +6,12 @@ package loadbalance
 
 import (
 	"fmt"
+	"github.com/golang/glog"
 	"gopkg.in/gcfg.v1"
 	"io"
 	"k8s.io/client-go/informers"
 	corev1informer "k8s.io/client-go/informers/core/v1"
 	"k8s.io/cloud-provider"
-	"k8s.io/klog"
 )
 
 const (
@@ -107,7 +107,7 @@ func newInCloud(config Config) (cloudprovider.Interface, error) {
 		KeycloakUrl:      config.Global.KeycloakUrl,
 	}
 
-	klog.V(1).Infof("InCloud provider init done")
+	glog.V(1).Infof("InCloud provider init done")
 	return &qc, nil
 }
 
