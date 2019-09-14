@@ -2,6 +2,6 @@
 FROM ubuntu
 MAINTAINER zhang yong
 WORKDIR /
-COPY ./bin/ .
+COPY main manager
 ENV PATH=$PATH:/
 CMD ["/manager"]
