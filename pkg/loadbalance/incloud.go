@@ -22,6 +22,7 @@ type LoadBalancerOpts struct {
 	SubnetID  string `gcfg:"subnet-id"`  //由于loadbalancer本身不在cloud controller manager创建，不需要
 	SlbUrlPre string `gcfg:"slburl-pre"` //cloud-config中配置slb url前缀；
 	SlbId     string `gcfg:"slbId"`      //创建集群时注入进来
+	KeycloakToken string `gcfg:"kktoken"`
 }
 
 type Config struct {
@@ -69,6 +70,7 @@ type InCloud struct {
 
 	LbUrlPre         string
 	LbId             string
+	KeycloakToken    string
 	RequestedSubject string
 	TokenClientID    string
 	ClientSecret     string
@@ -99,7 +101,8 @@ func readConfig(config io.Reader) (Config, error) {
 // newInCloud returns a new instance of InCloud cloud provider.
 func newInCloud(config Config) (cloudprovider.Interface, error) {
 	qc := InCloud{
-		LbUrlPre:         config.LoadBalancer.SubnetID,
+		LbUrlPre:         config.LoadBalancer.SlbUrlPre,
+		KeycloakToken:    config.LoadBalancer.KeycloakToken,
 		LbId:             config.LoadBalancer.SlbId,
 		RequestedSubject: config.Global.RequestedSubject,
 		TokenClientID:    config.Global.TokenClientID,

@@ -64,7 +64,7 @@ type SlbResponse struct {
 }
 
 func CreateBackends(config *InCloud, opts CreateBackendOpts) (*BackendList, error) {
-	token, error := getKeyCloakToken(config.RequestedSubject, config.TokenClientID, config.ClientSecret, config.KeycloakUrl)
+	token, error := getKeyCloakToken(config.RequestedSubject, config.TokenClientID, config.ClientSecret, config.KeycloakUrl,config)
 	if error != nil {
 		return nil, error
 	}
@@ -73,7 +73,7 @@ func CreateBackends(config *InCloud, opts CreateBackendOpts) (*BackendList, erro
 
 func UpdateBackends(config *InCloud, listener *Listener, backends interface{}) error {
 	//先查询listenner关联的backends
-	token, error := getKeyCloakToken(config.RequestedSubject, config.TokenClientID, config.ClientSecret, config.KeycloakUrl)
+	token, error := getKeyCloakToken(config.RequestedSubject, config.TokenClientID, config.ClientSecret, config.KeycloakUrl,config)
 	if error != nil {
 		return error
 	}
@@ -141,7 +141,7 @@ func UpdateBackends(config *InCloud, listener *Listener, backends interface{}) e
 
 func DeleteBackends(config *InCloud, listenerId string, backendIdList []string) error {
 
-	token, error := getKeyCloakToken(config.RequestedSubject, config.TokenClientID, config.ClientSecret, config.KeycloakUrl)
+	token, error := getKeyCloakToken(config.RequestedSubject, config.TokenClientID, config.ClientSecret, config.KeycloakUrl,config)
 	if error != nil {
 		return error
 	}
@@ -151,7 +151,7 @@ func DeleteBackends(config *InCloud, listenerId string, backendIdList []string) 
 }
 
 func GetBackends(config *InCloud, listenerId string) ([]Backend, error) {
-	token, error := getKeyCloakToken(config.RequestedSubject, config.TokenClientID, config.ClientSecret, config.KeycloakUrl)
+	token, error := getKeyCloakToken(config.RequestedSubject, config.TokenClientID, config.ClientSecret, config.KeycloakUrl,config)
 	if error != nil {
 		return nil, error
 	}
