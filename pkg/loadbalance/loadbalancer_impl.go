@@ -3,7 +3,7 @@ package loadbalance
 import (
 	"context"
 	"fmt"
-	"github.com/golang/glog"
+	"k8s.io/klog"
 	"strconv"
 	"time"
 
@@ -21,7 +21,7 @@ const (
 
 // LoadBalancer returns an implementation of LoadBalancer for InCloud.
 func (ic *InCloud) LoadBalancer() (cloudprovider.LoadBalancer, bool) {
-	glog.V(4).Info("LoadBalancer() called")
+	klog.V(4).Info("LoadBalancer() called")
 	return ic, true
 }
 
@@ -31,7 +31,7 @@ func (ic *InCloud) GetLoadBalancer(ctx context.Context, clusterName string, serv
 	//TODO 此处约定为创建集群时loadbalancer slbid注入到cloud-config中
 	lb, err := GetLoadBalancer(ic)
 	if err != nil {
-		glog.Errorf("Failed to call 'GetLoadBalancer' of service %s,slb Id:%s", service.Name, lb.SlbId)
+		klog.Errorf("Failed to call 'GetLoadBalancer' of service %s,slb Id:%s", service.Name, lb.SlbId)
 		return nil, false, err
 	}
 
@@ -48,7 +48,7 @@ func (ic *InCloud) GetLoadBalancer(ctx context.Context, clusterName string, serv
 func (ic *InCloud) GetLoadBalancerName(_ context.Context, clusterName string, service *v1.Service) string {
 	lb, err := GetLoadBalancer(ic)
 	if err != nil {
-		glog.Error("Failed to GetLoadBalancer by config:%v", ic)
+		klog.Error("Failed to GetLoadBalancer by config:%v", ic)
 		return ""
 	}
 	return lb.SlbName
@@ -64,10 +64,10 @@ func (ic *InCloud) EnsureLoadBalancer(ctx context.Context, clusterName string, s
 	startTime := time.Now()
 	defer func() {
 		elapsed := time.Since(startTime)
-		glog.V(1).Infof("EnsureLoadBalancer takes total %d seconds", elapsed/time.Second)
+		klog.V(1).Infof("EnsureLoadBalancer takes total %d seconds", elapsed/time.Second)
 	}()
 
-	glog.V(4).Infof("EnsureLoadBalancer(%v, %v, %v, %v, %v, %v, %v)", clusterName, service.Namespace, service.Name,
+	klog.V(4).Infof("EnsureLoadBalancer(%v, %v, %v, %v, %v, %v, %v)", clusterName, service.Namespace, service.Name,
 		service.Spec.LoadBalancerIP, service.Spec.Ports, nodes, service.Annotations)
 
 	if len(nodes) == 0 {
@@ -76,7 +76,7 @@ func (ic *InCloud) EnsureLoadBalancer(ctx context.Context, clusterName string, s
 
 	lb, err := GetLoadBalancer(ic)
 	if err != nil {
-		glog.Errorf("Failed to get lb by slbId:%s in incloud of service %s", lb.SlbId, service.Name)
+		klog.Errorf("Failed to get lb by slbId:%s in incloud of service %s", lb.SlbId, service.Name)
 		return nil, err
 	}
 	ls, err := GetListeners(ic)
@@ -96,7 +96,7 @@ func (ic *InCloud) EnsureLoadBalancer(ctx context.Context, clusterName string, s
 		listener := GetListenerForPort(ls, port)
 		//port not assigned
 		if listener == nil {
-			glog.V(4).Infof("Creating listener for port %d", int(port.Port))
+			klog.V(4).Infof("Creating listener for port %d", int(port.Port))
 			listener, err = CreateListener(ic, CreateListenerOpts{
 				SLBId:         lb.SlbId,
 				ListenerName:  fmt.Sprintf("listener_%s_%d", lb.SlbId, portIndex),
@@ -150,18 +150,18 @@ func (ic *InCloud) EnsureLoadBalancer(ctx context.Context, clusterName string, s
 func (ic *InCloud) UpdateLoadBalancer(ctx context.Context, clusterName string, service *v1.Service, nodes []*v1.Node) error {
 	lb, err := GetLoadBalancer(ic)
 	if err != nil {
-		glog.Error("Failed to GetLoadBalancer by %v", ic)
+		klog.Error("Failed to GetLoadBalancer by %v", ic)
 		return err
 	}
-	glog.V(4).Infof("UpdateLoadBalancer(%v, %v, %v)", clusterName, lb.SlbName, nodes)
+	klog.V(4).Infof("UpdateLoadBalancer(%v, %v, %v)", clusterName, lb.SlbName, nodes)
 
 	startTime := time.Now()
 	defer func() {
 		elapsed := time.Since(startTime)
-		glog.V(1).Infof("UpdateLoadBalancer takes total %d seconds", elapsed/time.Second)
+		klog.V(1).Infof("UpdateLoadBalancer takes total %d seconds", elapsed/time.Second)
 	}()
 
-	glog.V(4).Infof("UpdateLoadBalancer(%v, %v, %v, %v, %v, %v, %v)", clusterName, service.Namespace, service.Name,
+	klog.V(4).Infof("UpdateLoadBalancer(%v, %v, %v, %v, %v, %v, %v)", clusterName, service.Namespace, service.Name,
 		service.Spec.LoadBalancerIP, service.Spec.Ports, nodes, service.Annotations)
 
 	if len(nodes) == 0 {
@@ -187,7 +187,7 @@ func (ic *InCloud) UpdateLoadBalancer(ctx context.Context, clusterName string, s
 		listener := GetListenerForPort(ls, port)
 		//port not assigned
 		if listener == nil {
-			glog.V(4).Infof("Creating listener for port %d", int(port.Port))
+			klog.V(4).Infof("Creating listener for port %d", int(port.Port))
 			listener, err = CreateListener(ic, CreateListenerOpts{
 				SLBId:         lb.SlbId,
 				ListenerName:  fmt.Sprintf("listener_%s_%d", lb.SlbId, portIndex),
@@ -270,29 +270,29 @@ func (ic *InCloud) UpdateLoadBalancer(ctx context.Context, clusterName string, s
 // Parameter 'clusterName' is the name of the cluster as presented to kube-controller-manager
 func (ic *InCloud) EnsureLoadBalancerDeleted(ctx context.Context, clusterName string, service *v1.Service) error {
 
-	glog.V(4).Infof("EnsureLoadBalancerDeleted(%v, %v)", clusterName, service.Name)
+	klog.V(4).Infof("EnsureLoadBalancerDeleted(%v, %v)", clusterName, service.Name)
 
 	startTime := time.Now()
 	defer func() {
 		elapsed := time.Since(startTime)
-		glog.V(1).Infof("EnsureLoadBalancerDeleted takes total %d seconds", elapsed/time.Second)
+		klog.V(1).Infof("EnsureLoadBalancerDeleted takes total %d seconds", elapsed/time.Second)
 	}()
 
-	glog.V(4).Infof("EnsureLoadBalancerDeleted(%v, %v, %v, %v, %v, %v)", clusterName, service.Namespace, service.Name,
+	klog.V(4).Infof("EnsureLoadBalancerDeleted(%v, %v, %v, %v, %v, %v)", clusterName, service.Namespace, service.Name,
 		service.Spec.LoadBalancerIP, service.Spec.Ports, service.Annotations)
 
-	lb,error := GetLoadBalancer(ic)
+	lb, error := GetLoadBalancer(ic)
 	if error != nil {
-		glog.V(4).Infof("GetLoadBalancer fail , error :", error)
+		klog.V(4).Infof("GetLoadBalancer fail , error :", error)
 		return error
 	}
 	if nil == lb {
-		glog.V(4).Infof("there is no such loadbalancer")
+		klog.V(4).Infof("there is no such loadbalancer")
 		return nil
 	}
 	ls, err := GetListeners(ic)
 	if err != nil {
-		glog.V(4).Infof("get ls fail ,error : ",err)
+		klog.V(4).Infof("get ls fail ,error : ", err)
 		return err
 	}
 	////verify scheme 负载均衡的网络模式，默认参数：internet-facing：公网（默认）internal：内网
@@ -304,41 +304,41 @@ func (ic *InCloud) EnsureLoadBalancerDeleted(ctx context.Context, clusterName st
 	//verify ports
 	ports := service.Spec.Ports
 	if len(ports) == 0 {
-		return  fmt.Errorf("no ports provided for inspur load balancer")
+		return fmt.Errorf("no ports provided for inspur load balancer")
 	}
 	//the delete order : backend,ls,lb
 	for _, port := range ports {
 		listener := GetListenerForPort(ls, port)
 		//port not assigned
 		if listener != nil {
-			backends,err := GetBackends(ic,listener.ListenerId)
+			backends, err := GetBackends(ic, listener.ListenerId)
 			if nil != err {
-				glog.V(4).Infof("getBackens fail ,error : ",err )
+				klog.V(4).Infof("getBackens fail ,error : ", err)
 				return err
 			}
 			if nil != backends {
 				var backStringList []string
 				for _, backend := range backends {
-					backStringList = append(backStringList,backend.ServerId)
+					backStringList = append(backStringList, backend.ServerId)
 				}
-				DeleteBackends(ic, listener.ListenerId,backStringList)
+				DeleteBackends(ic, listener.ListenerId, backStringList)
 			}
 			error = listener.DeleteListener(ic)
 			if nil != error {
-				glog.V(4).Infof("DeleteListener fail ,error : ",err )
+				klog.V(4).Infof("DeleteListener fail ,error : ", err)
 				return err
 			}
 		}
 	}
 	err = DeleteLoadBalancer(ic)
 	if nil != err {
-		glog.V(4).Infof("DeleteListener fail ,error : ",err )
+		klog.V(4).Infof("DeleteListener fail ,error : ", err)
 		return err
 	}
 	//startTime := time.Now()
 	//defer func() {
 	//	elapsed := time.Since(startTime)
-	//	glog.V(1).Infof("DeleteLoadBalancer takes total %d seconds", elapsed/time.Second)
+	//	klog.V(1).Infof("DeleteLoadBalancer takes total %d seconds", elapsed/time.Second)
 	//}()
 	//lb, _ := ic.genLoadBalancer(ctx, clusterName, service, nil, true)
 	//return lb.DeleteQingCloudLB()
@@ -347,15 +347,15 @@ func (ic *InCloud) EnsureLoadBalancerDeleted(ctx context.Context, clusterName st
 
 //getStringFromServiceAnnotation searches a given v1.Service for a specific annotationKey and either returns the annotation's value or a specified defaultSetting
 func getStringFromServiceAnnotation(service *v1.Service, annotationKey string, defaultSetting string) string {
-	glog.V(4).Infof("getStringFromServiceAnnotation(%v, %v, %v)", service, annotationKey, defaultSetting)
+	klog.V(4).Infof("getStringFromServiceAnnotation(%v, %v, %v)", service, annotationKey, defaultSetting)
 	if annotationValue, ok := service.Annotations[annotationKey]; ok {
 		//if there is an annotation for this setting, set the "setting" var to it
 		// annotationValue can be empty, it is working as designed
 		// it makes possible for instance provisioning loadbalancer without floatingip
-		glog.V(4).Infof("Found a Service Annotation: %v = %v", annotationKey, annotationValue)
+		klog.V(4).Infof("Found a Service Annotation: %v = %v", annotationKey, annotationValue)
 		return annotationValue
 	}
 	//if there is no annotation, set "settings" var to the value from cloud config
-	glog.V(4).Infof("Could not find a Service Annotation; falling back on cloud-config setting: %v = %v", annotationKey, defaultSetting)
+	klog.V(4).Infof("Could not find a Service Annotation; falling back on cloud-config setting: %v = %v", annotationKey, defaultSetting)
 	return defaultSetting
 }

@@ -2,8 +2,8 @@ package loadbalance
 
 import (
 	"fmt"
-	"github.com/golang/glog"
 	"k8s.io/api/core/v1"
+	"k8s.io/klog"
 	"reflect"
 	"time"
 )
@@ -11,7 +11,7 @@ import (
 var ErrorBackendNotFound = fmt.Errorf("Cannot find backend")
 
 type Backend struct {
-	BackendId string `json:"backendId"`
+	BackendId   string `json:"backendId"`
 	ListenerId  string `json:"listenerId"`
 	ServerId    string `json:"ServerId"`
 	Port        int    `json:"port"`
@@ -79,12 +79,12 @@ func UpdateBackends(config *InCloud, listener *Listener, backends interface{}) e
 	}
 	backs, error := describeBackendservers(config.LbUrlPre, token, listener.SLBId, listener.ListenerId)
 	if error != nil {
-		glog.Infof("describeBackendservers failed ", error)
+		klog.Infof("describeBackendservers failed ", error)
 		return error
 	}
 	nodes, ok := backends.([]*v1.Node)
 	if !ok {
-		glog.Infof("skip default backends update for type %s", reflect.TypeOf(backends))
+		klog.Infof("skip default backends update for type %s", reflect.TypeOf(backends))
 		return nil
 	}
 	add, del := []*BackendServer{}, []string{}
@@ -113,7 +113,7 @@ func UpdateBackends(config *InCloud, listener *Listener, backends interface{}) e
 	}
 	_, err := CreateBackends(config, opts)
 	if nil != err {
-		glog.Infof("CreateBackends failed: ", err)
+		klog.Infof("CreateBackends failed: ", err)
 		return err
 	}
 	// check for removed backend servers
@@ -132,7 +132,7 @@ func UpdateBackends(config *InCloud, listener *Listener, backends interface{}) e
 	if len(del) > 0 {
 		DeleteBackends(config, listener.ListenerId, del)
 		if nil != err {
-			glog.Infof("DeleteBackends failed: ", err)
+			klog.Infof("DeleteBackends failed: ", err)
 			return err
 		}
 	}
@@ -145,22 +145,22 @@ func DeleteBackends(config *InCloud, listenerId string, backendIdList []string) 
 	if error != nil {
 		return error
 	}
-	error = removeBackendServers(config.LbUrlPre, token, config.LbId,listenerId,backendIdList)
+	error = removeBackendServers(config.LbUrlPre, token, config.LbId, listenerId, backendIdList)
 
 	return error
 }
 
-func GetBackends(config *InCloud, listenerId string)([]Backend,error){
+func GetBackends(config *InCloud, listenerId string) ([]Backend, error) {
 	token, error := getKeyCloakToken(config.RequestedSubject, config.TokenClientID, config.ClientSecret, config.KeycloakUrl)
 	if error != nil {
-		return nil,error
+		return nil, error
 	}
-	backends, error := describeBackendservers(config.LbUrlPre, token, config.LbId,listenerId)
+	backends, error := describeBackendservers(config.LbUrlPre, token, config.LbId, listenerId)
 	if nil != error {
-		glog.Infof("GetBackends failed: ", error)
-		return nil,error
+		klog.Infof("GetBackends failed: ", error)
+		return nil, error
 	}
-	return backends,nil
+	return backends, nil
 }
 
 func NewBackendList(lb *LoadBalancer, listener *Listener) *BackendList {

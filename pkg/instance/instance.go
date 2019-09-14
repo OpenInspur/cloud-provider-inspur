@@ -1,10 +1,10 @@
 package instance
 
 import (
-	"github.com/golang/glog"
-	v1 "k8s.io/api/core/v1"
+	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	corev1lister "k8s.io/client-go/listers/core/v1"
+	"k8s.io/klog"
 )
 
 const (
@@ -95,7 +95,7 @@ func NodeNameToInstanceID(name string, nodeLister corev1lister.NodeLister) strin
 		if errors.IsNotFound(err) {
 			return name
 		}
-		glog.Errorf("Failed to get instance id of node %s, err:", name)
+		klog.Errorf("Failed to get instance id of node %s, err:", name)
 		return ""
 	}
 	if instanceid, ok := node.GetAnnotations()[NodeAnnotationInstanceID]; ok {
