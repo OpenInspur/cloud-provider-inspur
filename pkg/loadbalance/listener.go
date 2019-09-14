@@ -46,7 +46,7 @@ type CreateListenerOpts struct {
 // GetListeners use should mannually load listener because sometimes we do not need load entire topology. For example, deletion
 //GetListeners get listeners by slbid
 func GetListeners(config *InCloud) ([]Listener, error) {
-	token, error := getKeyCloakToken(config.RequestedSubject, config.TokenClientID, config.ClientSecret, config.KeycloakUrl)
+	token, error := getKeyCloakToken(config.RequestedSubject, config.TokenClientID, config.ClientSecret, config.KeycloakUrl,config)
 	if error != nil {
 		return nil, error
 	}
@@ -64,7 +64,7 @@ func GetListeners(config *InCloud) ([]Listener, error) {
 
 //GetListener get listener by listenerid
 func GetListener(config *InCloud, listenerId string) (*Listener, error) {
-	token, error := getKeyCloakToken(config.RequestedSubject, config.TokenClientID, config.ClientSecret, config.KeycloakUrl)
+	token, error := getKeyCloakToken(config.RequestedSubject, config.TokenClientID, config.ClientSecret, config.KeycloakUrl,config)
 	if error != nil {
 		return nil, error
 	}
@@ -90,7 +90,7 @@ func GetListenerForPort(existingListeners []Listener, port corev1.ServicePort) *
 }
 
 func CreateListener(config *InCloud, opts CreateListenerOpts) (*Listener, error) {
-	token, error := getKeyCloakToken(config.RequestedSubject, config.TokenClientID, config.ClientSecret, config.KeycloakUrl)
+	token, error := getKeyCloakToken(config.RequestedSubject, config.TokenClientID, config.ClientSecret, config.KeycloakUrl,config)
 	if error != nil {
 		return nil, error
 	}
@@ -98,7 +98,7 @@ func CreateListener(config *InCloud, opts CreateListenerOpts) (*Listener, error)
 }
 
 func UpdateListener(config *InCloud, listenerid string, opts CreateListenerOpts) (*Listener, error) {
-	token, error := getKeyCloakToken(config.RequestedSubject, config.TokenClientID, config.ClientSecret, config.KeycloakUrl)
+	token, error := getKeyCloakToken(config.RequestedSubject, config.TokenClientID, config.ClientSecret, config.KeycloakUrl,config)
 	if error != nil {
 		return nil, error
 	}
@@ -181,7 +181,7 @@ func (l *Listener) CreateListener() error {
 
 func (l *Listener) DeleteListener(config *InCloud) error {
 
-	token, error := getKeyCloakToken(config.RequestedSubject, config.TokenClientID, config.ClientSecret, config.KeycloakUrl)
+	token, error := getKeyCloakToken(config.RequestedSubject, config.TokenClientID, config.ClientSecret, config.KeycloakUrl,config)
 	if error != nil {
 		return error
 	}

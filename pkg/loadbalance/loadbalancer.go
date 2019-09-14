@@ -55,7 +55,7 @@ type NewLoadBalancerOption struct {
 
 //GetLoadBalancer by slbid,use incloud api to get lb in cloud, return err if not found
 func GetLoadBalancer(config *InCloud) (*LoadBalancer, error) {
-	token, error := getKeyCloakToken(config.RequestedSubject, config.TokenClientID, config.ClientSecret, config.KeycloakUrl)
+	token, error := getKeyCloakToken(config.RequestedSubject, config.TokenClientID, config.ClientSecret, config.KeycloakUrl,config)
 	if error != nil {
 		return nil, error
 	}
@@ -70,7 +70,7 @@ func GetLoadBalancer(config *InCloud) (*LoadBalancer, error) {
 }
 
 func ModifyLoadBalancer(config *InCloud, slbName string) (*SlbResponse, error) {
-	token, error := getKeyCloakToken(config.RequestedSubject, config.TokenClientID, config.ClientSecret, config.KeycloakUrl)
+	token, error := getKeyCloakToken(config.RequestedSubject, config.TokenClientID, config.ClientSecret, config.KeycloakUrl,config)
 	if error != nil {
 		return nil, error
 	}
@@ -85,7 +85,7 @@ func ModifyLoadBalancer(config *InCloud, slbName string) (*SlbResponse, error) {
 }
 
 func DeleteLoadBalancer(config *InCloud)error{
-	token, error := getKeyCloakToken(config.RequestedSubject, config.TokenClientID, config.ClientSecret, config.KeycloakUrl)
+	token, error := getKeyCloakToken(config.RequestedSubject, config.TokenClientID, config.ClientSecret, config.KeycloakUrl,config)
 	if error != nil {
 		return error
 	}
