@@ -12,6 +12,7 @@ import (
 	corev1informer "k8s.io/client-go/informers/core/v1"
 	"k8s.io/cloud-provider"
 	"k8s.io/klog"
+	"encoding/json"
 )
 
 const (
@@ -111,6 +112,8 @@ func newInCloud(config Config) (cloudprovider.Interface, error) {
 	}
 
 	klog.V(1).Infof("InCloud provider init done")
+	b,_  := json.Marshal(&qc)
+	klog.V(1).Infof("InCloud is ",string(b))
 	return &qc, nil
 }
 
