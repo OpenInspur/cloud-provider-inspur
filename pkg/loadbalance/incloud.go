@@ -55,8 +55,12 @@ type Config struct {
 
 		MasterAuthURL  string `gcfg:"master-auth-url"`
 		OpenApiVersion string `gcfg:"openapi-version"`
+		SubnetID  string `gcfg:"subnet-id"`  //由于loadbalancer本身不在cloud controller manager创建，不需要
+		SlbUrlPre string `gcfg:"slburl-pre"` //cloud-config中配置slb url前缀；
+		SlbId     string `gcfg:"slbId"`      //创建集群时注入进来
+		KeycloakToken string `gcfg:"kktoken"`
 	}
-	LoadBalancerOpts LoadBalancerOpts
+	//LoadBalancerOpts LoadBalancerOpts
 }
 
 var _ cloudprovider.Interface = &InCloud{}
@@ -102,9 +106,9 @@ func readConfig(config io.Reader) (Config, error) {
 // newInCloud returns a new instance of InCloud cloud provider.
 func newInCloud(config Config) (cloudprovider.Interface, error) {
 	qc := InCloud{
-		LbUrlPre:         config.LoadBalancerOpts.SlbUrlPre,
-		KeycloakToken:    config.LoadBalancerOpts.KeycloakToken,
-		LbId:             config.LoadBalancerOpts.SlbId,
+		LbUrlPre:         config.Global.SlbUrlPre,
+		KeycloakToken:    config.Global.KeycloakToken,
+		LbId:             config.Global.SlbId,
 		RequestedSubject: config.Global.RequestedSubject,
 		TokenClientID:    config.Global.TokenClientID,
 		ClientSecret:     config.Global.ClientSecret,
