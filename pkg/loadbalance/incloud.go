@@ -56,7 +56,7 @@ type Config struct {
 		MasterAuthURL  string `gcfg:"master-auth-url"`
 		OpenApiVersion string `gcfg:"openapi-version"`
 	}
-	LoadBalancer LoadBalancerOpts
+	LoadBalancerOpts LoadBalancerOpts
 }
 
 var _ cloudprovider.Interface = &InCloud{}
@@ -102,9 +102,9 @@ func readConfig(config io.Reader) (Config, error) {
 // newInCloud returns a new instance of InCloud cloud provider.
 func newInCloud(config Config) (cloudprovider.Interface, error) {
 	qc := InCloud{
-		LbUrlPre:         config.LoadBalancer.SlbUrlPre,
-		KeycloakToken:    config.LoadBalancer.KeycloakToken,
-		LbId:             config.LoadBalancer.SlbId,
+		LbUrlPre:         config.LoadBalancerOpts.SlbUrlPre,
+		KeycloakToken:    config.LoadBalancerOpts.KeycloakToken,
+		LbId:             config.LoadBalancerOpts.SlbId,
 		RequestedSubject: config.Global.RequestedSubject,
 		TokenClientID:    config.Global.TokenClientID,
 		ClientSecret:     config.Global.ClientSecret,
