@@ -85,7 +85,10 @@ func (ic *InCloud) EnsureLoadBalancer(ctx context.Context, clusterName string, s
 	forwardRule := getStringFromServiceAnnotation(service, ServiceAnnotationLoadBalancerForwardRule, "RR")
 	healthCheck := getStringFromServiceAnnotation(service, ServiceAnnotationLoadBalancerHealthCheck, "0")
 	hc, _ := strconv.ParseBool(healthCheck)
-
+	hcs :=  "0"
+	if hc {
+		hcs = "1"
+	}
 	//verify ports
 	ports := service.Spec.Ports
 	if len(ports) == 0 {
@@ -103,7 +106,7 @@ func (ic *InCloud) EnsureLoadBalancer(ctx context.Context, clusterName string, s
 				Protocol:      Protocol(port.Protocol),
 				Port:          port.Port,
 				ForwardRule:   forwardRule,
-				IsHealthCheck: hc,
+				IsHealthCheck: hcs,
 			})
 			if err != nil {
 				// Unknown error, retry later
@@ -118,7 +121,7 @@ func (ic *InCloud) EnsureLoadBalancer(ctx context.Context, clusterName string, s
 				Protocol:      Protocol(port.Protocol),
 				Port:          port.Port,
 				ForwardRule:   forwardRule,
-				IsHealthCheck: hc,
+				IsHealthCheck: hcs,
 			})
 			if erro != nil {
 				return nil, fmt.Errorf("Error updating LB listener: %v", err)
@@ -176,6 +179,10 @@ func (ic *InCloud) UpdateLoadBalancer(ctx context.Context, clusterName string, s
 	forwardRule := getStringFromServiceAnnotation(service, ServiceAnnotationLoadBalancerForwardRule, "RR")
 	healthCheck := getStringFromServiceAnnotation(service, ServiceAnnotationLoadBalancerHealthCheck, "0")
 	hc, _ := strconv.ParseBool(healthCheck)
+	hcs := "0"
+	if hc{
+		hcs = "1"
+	}
 
 	//verify ports
 	ports := service.Spec.Ports
@@ -194,7 +201,7 @@ func (ic *InCloud) UpdateLoadBalancer(ctx context.Context, clusterName string, s
 				Protocol:      Protocol(port.Protocol),
 				Port:          port.Port,
 				ForwardRule:   forwardRule,
-				IsHealthCheck: hc,
+				IsHealthCheck: hcs,
 			})
 			if err != nil {
 				// Unknown error, retry later
@@ -209,7 +216,7 @@ func (ic *InCloud) UpdateLoadBalancer(ctx context.Context, clusterName string, s
 				Protocol:      Protocol(port.Protocol),
 				Port:          port.Port,
 				ForwardRule:   forwardRule,
-				IsHealthCheck: hc,
+				IsHealthCheck: hcs,
 			})
 			if erro != nil {
 				return fmt.Errorf("Error updating LB listener: %v", err)

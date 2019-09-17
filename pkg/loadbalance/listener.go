@@ -29,7 +29,7 @@ type Listener struct {
 	Protocol      string `json:"protocol"`
 	Port          int    `json:"port"`
 	ForwardRule   string `json:"forwardRule"`
-	IsHealthCheck bool   `json:"isHealthCheck"`
+	IsHealthCheck string   `json:"isHealthCheck"`
 	BackendServer []*BackendServer
 }
 
@@ -40,7 +40,7 @@ type CreateListenerOpts struct {
 	Protocol      Protocol `json:"protocol"`
 	Port          int32    `json:"port"`
 	ForwardRule   string   `json:"forwardRule"`
-	IsHealthCheck bool     `json:"isHealthCheck"`
+	IsHealthCheck string     `json:"isHealthCheck"`
 }
 
 // GetListeners use should mannually load listener because sometimes we do not need load entire topology. For example, deletion
