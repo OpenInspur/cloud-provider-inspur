@@ -104,7 +104,7 @@ func describeLoadBalancer(url, token, slbId string) (*LoadBalancer, error) {
 		return nil, fmt.Errorf("response not ok %d", res.StatusCode)
 	}
 	var result []LoadBalancer
-	err = xml.Unmarshal(body, &result)
+	err = json.Unmarshal(body, &result)
 	if err != nil {
 		klog.Errorf("Unmarshal body fail: %v", err)
 		return nil, err
@@ -152,7 +152,7 @@ func modifyLoadBalancer(url, token, slbId, slbName string) (*SlbResponse, error)
 		return nil, fmt.Errorf("response not ok %d", res.StatusCode)
 	}
 	var result SlbResponse
-	err = xml.Unmarshal(body, &result)
+	err = json.Unmarshal(body, &result)
 	if err != nil {
 		klog.Errorf("Unmarshal body fail: %v", err)
 		return nil, err
@@ -192,7 +192,7 @@ func deleteLoadBalancer(url, token, slbId string) error {
 		return fmt.Errorf("response not ok %d", res.StatusCode)
 	}
 	var result BackendList
-	err = xml.Unmarshal(body, &result)
+	err = json.Unmarshal(body, &result)
 	if err != nil {
 		klog.Errorf("Unmarshal body fail: %v", err)
 		return err
@@ -235,7 +235,7 @@ func describeListenersBySlbId(url, token, slbId string) ([]Listener, error) {
 		return nil, fmt.Errorf("response not ok %d", res.StatusCode)
 	}
 	var result []Listener
-	err = xml.Unmarshal(body, &result)
+	err = json.Unmarshal(body, &result)
 	if err != nil {
 		klog.Errorf("Unmarshal body fail: %v", err)
 		return nil, err
