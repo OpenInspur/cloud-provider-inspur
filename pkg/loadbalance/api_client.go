@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"crypto/tls"
 	"encoding/json"
-	"encoding/xml"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -104,6 +103,7 @@ func describeLoadBalancer(url, token, slbId string) (*LoadBalancer, error) {
 		return nil, fmt.Errorf("response not ok %d", res.StatusCode)
 	}
 	var result []LoadBalancer
+	klog.Infof("result is ",string(body))
 	err = json.Unmarshal(body, &result)
 	if err != nil {
 		klog.Errorf("Unmarshal body fail: %v", err)
@@ -273,7 +273,7 @@ func describeListenerByListnerId(url, token, slbId, listnerId string) (*Listener
 		return nil, fmt.Errorf("response not ok %d", res.StatusCode)
 	}
 	var result Listener
-	err = xml.Unmarshal(body, &result)
+	err = json.Unmarshal(body, &result)
 	if err != nil {
 		klog.Errorf("Unmarshal body fail: %v", err)
 		return nil, err
@@ -319,7 +319,7 @@ func createListener(url, token string, opts CreateListenerOpts) (*Listener, erro
 		return nil, fmt.Errorf("response not ok %d", res.StatusCode)
 	}
 	var result Listener
-	err = xml.Unmarshal(body, &result)
+	err = json.Unmarshal(body, &result)
 	if err != nil {
 		klog.Errorf("Unmarshal body fail: %v", err)
 		return nil, err
@@ -366,7 +366,7 @@ func modifyListener(url, token, listenerid string, opts CreateListenerOpts) (*Li
 		return nil, fmt.Errorf("response not ok %d", res.StatusCode)
 	}
 	var result Listener
-	err = xml.Unmarshal(body, &result)
+	err = json.Unmarshal(body, &result)
 	if err != nil {
 		klog.Errorf("Unmarshal body fail: %v", err)
 		return nil, err
@@ -406,7 +406,7 @@ func deleteListener(url, token, slbId, listnerId string) error {
 		return fmt.Errorf("response not ok %d", res.StatusCode)
 	}
 	var result BackendList
-	err = xml.Unmarshal(body, &result)
+	err = json.Unmarshal(body, &result)
 	if err != nil {
 		klog.Errorf("Unmarshal body fail: %v", err)
 		return err
@@ -455,7 +455,7 @@ func createBackend(url, token string, opts CreateBackendOpts) (*BackendList, err
 		return nil, fmt.Errorf("response not ok %d", res.StatusCode)
 	}
 	var result BackendList
-	err = xml.Unmarshal(body, &result)
+	err = json.Unmarshal(body, &result)
 	if err != nil {
 		klog.Errorf("Unmarshal body fail: %v", err)
 		return nil, err
@@ -496,7 +496,7 @@ func describeBackendservers(url, token, slbId, listnerId string) ([]Backend, err
 		return nil, fmt.Errorf("response not ok %d", res.StatusCode)
 	}
 	var result []Backend
-	err = xml.Unmarshal(body, &result)
+	err = json.Unmarshal(body, &result)
 	if err != nil {
 		klog.Errorf("Unmarshal body fail: %v", err)
 		return nil, err
@@ -541,7 +541,7 @@ func removeBackendServers(url, token, slbId, listnerId string, backendIdList []s
 		return fmt.Errorf("response not ok %d", res.StatusCode)
 	}
 	var result BackendList
-	err = xml.Unmarshal(body, &result)
+	err = json.Unmarshal(body, &result)
 	if err != nil {
 		klog.Errorf("Unmarshal body fail: %v", err)
 		return err
