@@ -34,7 +34,7 @@ type LoadBalancer struct {
 	SubnetId          string `json:"subnetId"`
 	EipId             string `json:"eipId"`
 	EipAddress        string `json:"eipAddress"`
-	ListenerCount     string `json:"listenerCount"`
+	ListenerCount     int `json:"listenerCount"`
 	SlbType           string `json:"slbType"`
 	State             string `json:"state"`
 	UserId            string `json:"userId"`
