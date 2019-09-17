@@ -264,7 +264,6 @@ func (ic *InCloud) UpdateLoadBalancer(ctx context.Context, clusterName string, s
 	//	listener.UpdateListener()
 	//}
 
-	return nil
 }
 
 // EnsureLoadBalancerDeleted deletes the specified load balancer if it
@@ -337,11 +336,11 @@ func (ic *InCloud) EnsureLoadBalancerDeleted(ctx context.Context, clusterName st
 			}
 		}
 	}
-	err = DeleteLoadBalancer(ic)
-	if nil != err {
-		klog.V(4).Infof("DeleteListener fail ,error : ", err)
-		return err
-	}
+	//err = DeleteLoadBalancer(ic)
+	//if nil != err {
+	//	klog.V(4).Infof("DeleteListener fail ,error : ", err)
+	//	return err
+	//}
 	//startTime := time.Now()
 	//defer func() {
 	//	elapsed := time.Since(startTime)

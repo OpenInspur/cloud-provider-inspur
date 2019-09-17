@@ -109,7 +109,11 @@ func describeLoadBalancer(url, token, slbId string) (*LoadBalancer, error) {
 		klog.Errorf("Unmarshal body fail: %v", err)
 		return nil, err
 	}
-	return &result[0], nil
+	if nil != result && len(result)>0 {
+		return &result[0], nil
+	}else{
+		return nil,errors.New("lb is empty")
+	}
 }
 
 func modifyLoadBalancer(url, token, slbId, slbName string) (*SlbResponse, error) {
