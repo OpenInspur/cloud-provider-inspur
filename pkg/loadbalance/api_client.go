@@ -187,7 +187,7 @@ func deleteLoadBalancer(url, token, slbId string) error {
 		klog.Errorf("Get response body fail %v", err)
 		return err
 	}
-	if res.StatusCode != http.StatusOK {
+	if res.StatusCode != http.StatusAccepted {
 		klog.Errorf("response not ok %v", res.StatusCode)
 		return fmt.Errorf("response not ok %d", res.StatusCode)
 	}
@@ -401,7 +401,7 @@ func deleteListener(url, token, slbId, listnerId string) error {
 		klog.Errorf("Get response body fail %v", err)
 		return err
 	}
-	if res.StatusCode != http.StatusOK {
+	if res.StatusCode != http.StatusNoContent {
 		klog.Errorf("response not ok %v", res.StatusCode)
 		return fmt.Errorf("response not ok %d", res.StatusCode)
 	}
