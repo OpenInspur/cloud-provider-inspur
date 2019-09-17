@@ -31,7 +31,7 @@ func (ic *InCloud) GetLoadBalancer(ctx context.Context, clusterName string, serv
 	//TODO 此处约定为创建集群时loadbalancer slbid注入到cloud-config中
 	lb, err := GetLoadBalancer(ic)
 	if err != nil {
-		klog.Errorf("Failed to call 'GetLoadBalancer' of service %s,slb Id:%s", service.Name, lb.SlbId)
+		klog.Errorf("Failed to call 'GetLoadBalancer' of service %s,slb Id:%s", service.Name, ic.LbId)
 		return nil, false, err
 	}
 
@@ -85,7 +85,7 @@ func (ic *InCloud) EnsureLoadBalancer(ctx context.Context, clusterName string, s
 	forwardRule := getStringFromServiceAnnotation(service, ServiceAnnotationLoadBalancerForwardRule, "RR")
 	healthCheck := getStringFromServiceAnnotation(service, ServiceAnnotationLoadBalancerHealthCheck, "0")
 	hc, _ := strconv.ParseBool(healthCheck)
-	hcs :=  "0"
+	hcs := "0"
 	if hc {
 		hcs = "1"
 	}
@@ -180,7 +180,7 @@ func (ic *InCloud) UpdateLoadBalancer(ctx context.Context, clusterName string, s
 	healthCheck := getStringFromServiceAnnotation(service, ServiceAnnotationLoadBalancerHealthCheck, "0")
 	hc, _ := strconv.ParseBool(healthCheck)
 	hcs := "0"
-	if hc{
+	if hc {
 		hcs = "1"
 	}
 
