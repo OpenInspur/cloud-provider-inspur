@@ -76,7 +76,7 @@ func (ic *InCloud) EnsureLoadBalancer(ctx context.Context, clusterName string, s
 
 	lb, err := GetLoadBalancer(ic)
 	if err != nil {
-		klog.Errorf("Failed to get lb by slbId:%s in incloud of service %s", lb.SlbId, service.Name)
+		klog.Errorf("Failed to get lb by slbId:%s in incloud of service %s", ic.LbId, service.Name)
 		return nil, err
 	}
 	ls, err := GetListeners(ic)
@@ -102,7 +102,7 @@ func (ic *InCloud) EnsureLoadBalancer(ctx context.Context, clusterName string, s
 			klog.V(4).Infof("Creating listener for port %d", int(port.Port))
 			listener, err = CreateListener(ic, CreateListenerOpts{
 				SLBId:         lb.SlbId,
-				ListenerName:  fmt.Sprintf("listener_%s_%d", lb.SlbId, portIndex),
+				ListenerName:  fmt.Sprintf("listener_%s_%d", ic.LbId, portIndex),
 				Protocol:      Protocol(port.Protocol),
 				Port:          port.Port,
 				ForwardRule:   forwardRule,
@@ -117,7 +117,7 @@ func (ic *InCloud) EnsureLoadBalancer(ctx context.Context, clusterName string, s
 			//TODO:
 			_, erro := UpdateListener(ic, listener.ListenerId, CreateListenerOpts{
 				SLBId:         lb.SlbId,
-				ListenerName:  fmt.Sprintf("listener_%s_%d", lb.SlbId, portIndex),
+				ListenerName:  fmt.Sprintf("listener_%s_%d", ic.LbId, portIndex),
 				Protocol:      Protocol(port.Protocol),
 				Port:          port.Port,
 				ForwardRule:   forwardRule,
