@@ -104,7 +104,7 @@ func (ic *InCloud) EnsureLoadBalancer(ctx context.Context, clusterName string, s
 				SLBId:         lb.SlbId,
 				ListenerName:  fmt.Sprintf("listener_%s_%d", ic.LbId, portIndex),
 				Protocol:      Protocol(port.Protocol),
-				Port:          port.Port,
+				Port:          port.NodePort,
 				ForwardRule:   forwardRule,
 				IsHealthCheck: hcs,
 			})
@@ -119,7 +119,7 @@ func (ic *InCloud) EnsureLoadBalancer(ctx context.Context, clusterName string, s
 				SLBId:         lb.SlbId,
 				ListenerName:  fmt.Sprintf("listener_%s_%d", ic.LbId, portIndex),
 				Protocol:      Protocol(port.Protocol),
-				Port:          port.Port,
+				Port:          port.NodePort,
 				ForwardRule:   forwardRule,
 				IsHealthCheck: hcs,
 			})
