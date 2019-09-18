@@ -99,7 +99,7 @@ func describeLoadBalancer(url, token, slbId string) (*LoadBalancer, error) {
 		return nil, err
 	}
 	if res.StatusCode != http.StatusOK {
-		klog.Errorf("response not ok %v", res.StatusCode)
+		klog.Errorf("response not ok %v", res)
 		return nil, fmt.Errorf("response not ok %d", res.StatusCode)
 	}
 	var result []LoadBalancer
@@ -152,7 +152,7 @@ func modifyLoadBalancer(url, token, slbId, slbName string) (*SlbResponse, error)
 		return nil, err
 	}
 	if res.StatusCode != http.StatusOK {
-		klog.Errorf("response not ok %v", res.StatusCode)
+		klog.Errorf("response not ok %v", res)
 		return nil, fmt.Errorf("response not ok %d", res.StatusCode)
 	}
 	var result SlbResponse
@@ -192,7 +192,7 @@ func deleteLoadBalancer(url, token, slbId string) error {
 		return err
 	}
 	if res.StatusCode != http.StatusAccepted {
-		klog.Errorf("response not ok %v", res.StatusCode)
+		klog.Errorf("response not ok %v", res)
 		return fmt.Errorf("response not ok %d", res.StatusCode)
 	}
 	var result BackendList
@@ -235,7 +235,7 @@ func describeListenersBySlbId(url, token, slbId string) ([]Listener, error) {
 		return nil, err
 	}
 	if res.StatusCode != http.StatusOK {
-		klog.Errorf("response not ok %v", res.StatusCode)
+		klog.Errorf("response not ok %v", res)
 		return nil, fmt.Errorf("response not ok %d", res.StatusCode)
 	}
 	var result []Listener
@@ -273,7 +273,7 @@ func describeListenerByListnerId(url, token, slbId, listnerId string) (*Listener
 		return nil, err
 	}
 	if res.StatusCode != http.StatusOK {
-		klog.Errorf("response not ok %v", res.StatusCode)
+		klog.Errorf("response not ok %v", res)
 		return nil, fmt.Errorf("response not ok %d", res.StatusCode)
 	}
 	var result Listener
@@ -319,7 +319,7 @@ func createListener(url, token string, opts CreateListenerOpts) (*Listener, erro
 		return nil, err
 	}
 	if res.StatusCode != http.StatusOK {
-		klog.Errorf("response not ok %v", res.StatusCode)
+		klog.Errorf("response not ok %v", res)
 		return nil, fmt.Errorf("response not ok %d", res.StatusCode)
 	}
 	var result Listener
@@ -366,7 +366,7 @@ func modifyListener(url, token, listenerid string, opts CreateListenerOpts) (*Li
 		return nil, err
 	}
 	if res.StatusCode != http.StatusOK {
-		klog.Errorf("response not ok %v", res.StatusCode)
+		klog.Errorf("response not ok %v", res)
 		return nil, fmt.Errorf("response not ok %d", res.StatusCode)
 	}
 	var result Listener
@@ -406,7 +406,7 @@ func deleteListener(url, token, slbId, listnerId string) error {
 		return err
 	}
 	if res.StatusCode != http.StatusNoContent {
-		klog.Errorf("response not ok %v", res.StatusCode)
+		klog.Errorf("response not ok %v", res)
 		return fmt.Errorf("response not ok %d", res.StatusCode)
 	}
 	var result BackendList
@@ -455,7 +455,7 @@ func createBackend(url, token string, opts CreateBackendOpts) (*BackendList, err
 		return nil, err
 	}
 	if res.StatusCode != http.StatusOK {
-		klog.Errorf("response not ok %v", res.StatusCode)
+		klog.Errorf("response not ok %v", res)
 		return nil, fmt.Errorf("response not ok %d", res.StatusCode)
 	}
 	var result BackendList
@@ -496,7 +496,7 @@ func describeBackendservers(url, token, slbId, listnerId string) ([]Backend, err
 		return nil, err
 	}
 	if res.StatusCode != http.StatusOK {
-		klog.Errorf("response not ok %v", res.StatusCode)
+		klog.Errorf("response not ok %v", res)
 		return nil, fmt.Errorf("response not ok %d", res.StatusCode)
 	}
 	var result []Backend
@@ -541,7 +541,7 @@ func removeBackendServers(url, token, slbId, listnerId string, backendIdList []s
 		return err
 	}
 	if res.StatusCode != http.StatusOK {
-		klog.Errorf("response not ok %v", res.StatusCode)
+		klog.Errorf("response not ok %v", res)
 		return fmt.Errorf("response not ok %d", res.StatusCode)
 	}
 	var result BackendList
