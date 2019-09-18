@@ -29,7 +29,7 @@ type Listener struct {
 	Protocol      string `json:"protocol"`
 	Port          int    `json:"port"`
 	ForwardRule   string `json:"forwardRule"`
-	IsHealthCheck string   `json:"isHealthCheck"`
+	IsHealthCheck string `json:"isHealthCheck"`
 	BackendServer []*BackendServer
 }
 
@@ -40,13 +40,13 @@ type CreateListenerOpts struct {
 	Protocol      Protocol `json:"protocol"`
 	Port          int32    `json:"port"`
 	ForwardRule   string   `json:"forwardRule"`
-	IsHealthCheck string     `json:"isHealthCheck"`
+	IsHealthCheck string   `json:"isHealthCheck"`
 }
 
 // GetListeners use should mannually load listener because sometimes we do not need load entire topology. For example, deletion
 //GetListeners get listeners by slbid
 func GetListeners(config *InCloud) ([]Listener, error) {
-	token, error := getKeyCloakToken(config.RequestedSubject, config.TokenClientID, config.ClientSecret, config.KeycloakUrl,config)
+	token, error := getKeyCloakToken(config.RequestedSubject, config.TokenClientID, config.ClientSecret, config.KeycloakUrl, config)
 	if error != nil {
 		return nil, error
 	}
@@ -64,7 +64,7 @@ func GetListeners(config *InCloud) ([]Listener, error) {
 
 //GetListener get listener by listenerid
 func GetListener(config *InCloud, listenerId string) (*Listener, error) {
-	token, error := getKeyCloakToken(config.RequestedSubject, config.TokenClientID, config.ClientSecret, config.KeycloakUrl,config)
+	token, error := getKeyCloakToken(config.RequestedSubject, config.TokenClientID, config.ClientSecret, config.KeycloakUrl, config)
 	if error != nil {
 		return nil, error
 	}
@@ -90,7 +90,7 @@ func GetListenerForPort(existingListeners []Listener, port corev1.ServicePort) *
 }
 
 func CreateListener(config *InCloud, opts CreateListenerOpts) (*Listener, error) {
-	token, error := getKeyCloakToken(config.RequestedSubject, config.TokenClientID, config.ClientSecret, config.KeycloakUrl,config)
+	token, error := getKeyCloakToken(config.RequestedSubject, config.TokenClientID, config.ClientSecret, config.KeycloakUrl, config)
 	if error != nil {
 		return nil, error
 	}
@@ -98,7 +98,7 @@ func CreateListener(config *InCloud, opts CreateListenerOpts) (*Listener, error)
 }
 
 func UpdateListener(config *InCloud, listenerid string, opts CreateListenerOpts) (*Listener, error) {
-	token, error := getKeyCloakToken(config.RequestedSubject, config.TokenClientID, config.ClientSecret, config.KeycloakUrl,config)
+	token, error := getKeyCloakToken(config.RequestedSubject, config.TokenClientID, config.ClientSecret, config.KeycloakUrl, config)
 	if error != nil {
 		return nil, error
 	}
@@ -181,11 +181,11 @@ func (l *Listener) CreateListener() error {
 
 func (l *Listener) DeleteListener(config *InCloud) error {
 
-	token, error := getKeyCloakToken(config.RequestedSubject, config.TokenClientID, config.ClientSecret, config.KeycloakUrl,config)
+	token, error := getKeyCloakToken(config.RequestedSubject, config.TokenClientID, config.ClientSecret, config.KeycloakUrl, config)
 	if error != nil {
 		return error
 	}
-	error = deleteListener(config.LbUrlPre, token, config.LbId,l.ListenerId)
+	error = deleteListener(config.LbUrlPre, token, config.LbId, l.ListenerId)
 	if nil != error {
 		klog.Error("Deleting LoadBalancerListener :'%s'", error.Error())
 	}
@@ -215,7 +215,7 @@ func (l *Listener) UpdateBackends() error {
 	//	return err
 	//}
 	//if len(useless) > 0 {
-	//	klog.V(1).Infof("Delete useless backends")
+	//	klog.Infof("Delete useless backends")
 	//	err := l.backendExec.DeleteBackends(useless...)
 	//	if err != nil {
 	//		klog.Errorf("Failed to delete useless backends of listener %s", l.Name)

@@ -34,7 +34,7 @@ type LoadBalancer struct {
 	SubnetId          string `json:"subnetId"`
 	EipId             string `json:"eipId"`
 	EipAddress        string `json:"eipAddress"`
-	ListenerCount     int `json:"listenerCount"`
+	ListenerCount     int    `json:"listenerCount"`
 	SlbType           string `json:"slbType"`
 	State             string `json:"state"`
 	UserId            string `json:"userId"`
@@ -55,7 +55,7 @@ type NewLoadBalancerOption struct {
 
 //GetLoadBalancer by slbid,use incloud api to get lb in cloud, return err if not found
 func GetLoadBalancer(config *InCloud) (*LoadBalancer, error) {
-	token, error := getKeyCloakToken(config.RequestedSubject, config.TokenClientID, config.ClientSecret, config.KeycloakUrl,config)
+	token, error := getKeyCloakToken(config.RequestedSubject, config.TokenClientID, config.ClientSecret, config.KeycloakUrl, config)
 	if error != nil {
 		return nil, error
 	}
@@ -70,7 +70,7 @@ func GetLoadBalancer(config *InCloud) (*LoadBalancer, error) {
 }
 
 func ModifyLoadBalancer(config *InCloud, slbName string) (*SlbResponse, error) {
-	token, error := getKeyCloakToken(config.RequestedSubject, config.TokenClientID, config.ClientSecret, config.KeycloakUrl,config)
+	token, error := getKeyCloakToken(config.RequestedSubject, config.TokenClientID, config.ClientSecret, config.KeycloakUrl, config)
 	if error != nil {
 		return nil, error
 	}
@@ -84,14 +84,15 @@ func ModifyLoadBalancer(config *InCloud, slbName string) (*SlbResponse, error) {
 	return slbResponse, nil
 }
 
-func DeleteLoadBalancer(config *InCloud)error{
-	token, error := getKeyCloakToken(config.RequestedSubject, config.TokenClientID, config.ClientSecret, config.KeycloakUrl,config)
+func DeleteLoadBalancer(config *InCloud) error {
+	token, error := getKeyCloakToken(config.RequestedSubject, config.TokenClientID, config.ClientSecret, config.KeycloakUrl, config)
 	if error != nil {
 		return error
 	}
-	error = deleteLoadBalancer(config.LbUrlPre,token,config.LbId)
+	error = deleteLoadBalancer(config.LbUrlPre, token, config.LbId)
 	return error
 }
+
 //// CreateQingCloudLB do create a lb in incloud
 //func (l *LoadBalancer) CreateQingCloudLB() error {
 //	err := l.EnsureEIP()
@@ -133,7 +134,7 @@ func DeleteLoadBalancer(config *InCloud)error{
 //		return err
 //	}
 //	l.GenerateK8sLoadBalancer()
-//	klog.V(1).Infof("Loadbalancer %s created succeefully", l.Name)
+//	klog.Infof("Loadbalancer %s created succeefully", l.Name)
 //	return nil
 //}
 //
@@ -240,7 +241,7 @@ func DeleteLoadBalancer(config *InCloud)error{
 //		err := l.GetLoadBalancer()
 //		if err != nil {
 //			if err == ErrorNotFoundInCloud {
-//				klog.V(1).Infof("Cannot find the lb %s in cloud, maybe is deleted", l.Name)
+//				klog.Infof("Cannot find the lb %s in cloud, maybe is deleted", l.Name)
 //				err = l.deleteSecurityGroup()
 //				if err != nil {
 //					if err == ErrorSGNotFoundInCloud {

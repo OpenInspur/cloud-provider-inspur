@@ -5,6 +5,7 @@
 package loadbalance
 
 import (
+	"encoding/json"
 	"fmt"
 	"gopkg.in/gcfg.v1"
 	"io"
@@ -12,7 +13,6 @@ import (
 	corev1informer "k8s.io/client-go/informers/core/v1"
 	"k8s.io/cloud-provider"
 	"k8s.io/klog"
-	"encoding/json"
 )
 
 const (
@@ -20,9 +20,9 @@ const (
 )
 
 type LoadBalancerOpts struct {
-	SubnetID  string `gcfg:"subnet-id"`  //由于loadbalancer本身不在cloud controller manager创建，不需要
-	SlbUrlPre string `gcfg:"slburl-pre"` //cloud-config中配置slb url前缀；
-	SlbId     string `gcfg:"slbId"`      //创建集群时注入进来
+	SubnetID      string `gcfg:"subnet-id"`  //由于loadbalancer本身不在cloud controller manager创建，不需要
+	SlbUrlPre     string `gcfg:"slburl-pre"` //cloud-config中配置slb url前缀；
+	SlbId         string `gcfg:"slbId"`      //创建集群时注入进来
 	KeycloakToken string `gcfg:"kktoken"`
 }
 
@@ -55,10 +55,10 @@ type Config struct {
 
 		MasterAuthURL  string `gcfg:"master-auth-url"`
 		OpenApiVersion string `gcfg:"openapi-version"`
-		SubnetID  string `gcfg:"subnet-id"`  //由于loadbalancer本身不在cloud controller manager创建，不需要
-		SlbUrlPre string `gcfg:"slburl-pre"` //cloud-config中配置slb url前缀；
-		SlbId     string `gcfg:"slbId"`      //创建集群时注入进来
-		KeycloakToken string `gcfg:"kktoken"`
+		SubnetID       string `gcfg:"subnet-id"`  //由于loadbalancer本身不在cloud controller manager创建，不需要
+		SlbUrlPre      string `gcfg:"slburl-pre"` //cloud-config中配置slb url前缀；
+		SlbId          string `gcfg:"slbId"`      //创建集群时注入进来
+		KeycloakToken  string `gcfg:"kktoken"`
 	}
 	//LoadBalancerOpts LoadBalancerOpts
 }
@@ -115,9 +115,9 @@ func newInCloud(config Config) (cloudprovider.Interface, error) {
 		KeycloakUrl:      config.Global.KeycloakUrl,
 	}
 
-	klog.V(1).Infof("InCloud provider init done")
-	b,_  := json.Marshal(&qc)
-	klog.V(1).Infof("InCloud is ",string(b))
+	klog.Infof("InCloud provider init done")
+	b, _ := json.Marshal(&qc)
+	klog.Infof("InCloud is ", string(b))
 	return &qc, nil
 }
 

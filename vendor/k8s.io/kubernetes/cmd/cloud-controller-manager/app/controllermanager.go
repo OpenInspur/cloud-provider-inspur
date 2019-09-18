@@ -230,7 +230,7 @@ func startControllers(c *cloudcontrollerconfig.CompletedConfig, stopCh <-chan st
 			continue
 		}
 
-		klog.V(1).Infof("Starting %q", controllerName)
+		klog.Infof("Starting %q", controllerName)
 		_, started, err := initFn(c, cloud, stopCh)
 		if err != nil {
 			klog.Errorf("Error starting %q", controllerName)

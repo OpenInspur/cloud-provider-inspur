@@ -27,9 +27,9 @@ type keycloakToken struct {
 	SessionState     string `json:"session_state"`
 }
 
-func getKeyCloakToken(requestedSubject, tokenClientId, clientSecret, keycloakUrl string,ic *InCloud) (string, error) {
+func getKeyCloakToken(requestedSubject, tokenClientId, clientSecret, keycloakUrl string, ic *InCloud) (string, error) {
 
-	return ic.KeycloakToken,nil
+	return ic.KeycloakToken, nil
 	//var grantType = "urn:ietf:params:oauth:grant-type:token-exchange"
 	//var requestTokenType = "urn:ietf:params:oauth:token-type:refresh_token"
 	//var audience = "console"
@@ -77,8 +77,8 @@ func describeLoadBalancer(url, token, slbId string) (*LoadBalancer, error) {
 	}
 	client := &http.Client{Transport: tr}
 	reqUrl := url + "?slbId=" + slbId
-	klog.Infof("requestUrl is ",reqUrl)
-	klog.Infof("token is ",token)
+	klog.Infof("requestUrl is ", reqUrl)
+	klog.Infof("token is ", token)
 	req, err := http.NewRequest("GET", reqUrl, nil)
 	if err != nil {
 		klog.Errorf("Request error %v", err)
@@ -103,16 +103,16 @@ func describeLoadBalancer(url, token, slbId string) (*LoadBalancer, error) {
 		return nil, fmt.Errorf("response not ok %d", res.StatusCode)
 	}
 	var result []LoadBalancer
-	klog.Infof("result is ",string(body))
+	klog.Infof("result is ", string(body))
 	err = json.Unmarshal(body, &result)
 	if err != nil {
 		klog.Errorf("Unmarshal body fail: %v", err)
 		return nil, err
 	}
-	if nil != result && len(result)>0 {
+	if nil != result && len(result) > 0 {
 		return &result[0], nil
-	}else{
-		return nil,errors.New("lb is empty")
+	} else {
+		return nil, errors.New("lb is empty")
 	}
 }
 
@@ -129,15 +129,15 @@ func modifyLoadBalancer(url, token, slbId, slbName string) (*SlbResponse, error)
 		klog.Errorf("servers conver to bytes error %v", err)
 		return nil, err
 	}
-	klog.Infof("requestUrl is ",reqUrl)
-	klog.Infof("token is ",token)
-	klog.Infof("requestBody is ",string(slbNameByte))
+	klog.Infof("requestUrl is ", reqUrl)
+	klog.Infof("token is ", token)
+	klog.Infof("requestBody is ", string(slbNameByte))
 	req, err := http.NewRequest("PUT", reqUrl, bytes.NewReader(slbNameByte))
 	if err != nil {
 		klog.Errorf("Request error %v", err)
 		return nil, err
 	}
-	req.Header.Set("Content-Type", "text/plain")
+	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", token)
 	req.Header.Set("Date", time.Now().UTC().Format(time.RFC1123))
 	res, err := client.Do(req)
@@ -170,8 +170,8 @@ func deleteLoadBalancer(url, token, slbId string) error {
 	}
 	client := &http.Client{Transport: tr}
 	reqUrl := url + "/" + slbId
-	klog.Infof("requestUrl is ",reqUrl)
-	klog.Infof("token is ",token)
+	klog.Infof("requestUrl is ", reqUrl)
+	klog.Infof("token is ", token)
 	req, err := http.NewRequest("DELETE", reqUrl, nil)
 	if err != nil {
 		klog.Errorf("Request error %v", err)
@@ -213,8 +213,8 @@ func describeListenersBySlbId(url, token, slbId string) ([]Listener, error) {
 	}
 	client := &http.Client{Transport: tr}
 	reqUrl := url + "/" + slbId + "/listeners"
-	klog.Infof("requestUrl is ",reqUrl)
-	klog.Infof("token is ",token)
+	klog.Infof("requestUrl is ", reqUrl)
+	klog.Infof("token is ", token)
 	req, err := http.NewRequest("GET", reqUrl, nil)
 	if err != nil {
 		klog.Errorf("Request error %v", err)
@@ -291,20 +291,20 @@ func createListener(url, token string, opts CreateListenerOpts) (*Listener, erro
 	}
 	client := &http.Client{Transport: tr}
 	reqUrl := url + "/" + opts.SLBId + "/listeners/"
-	klog.Infof("requestUrl is ",reqUrl)
-	klog.Infof("token is ",token)
+	klog.Infof("requestUrl is ", reqUrl)
+	klog.Infof("token is ", token)
 	serversByte, err := json.Marshal(&opts)
 	if nil != err {
 		klog.Errorf("opts conver to bytes error %v", err)
 		return nil, err
 	}
-	klog.Infof("requestBody is ",string(serversByte))
+	klog.Infof("requestBody is ", string(serversByte))
 	req, err := http.NewRequest("POST", reqUrl, bytes.NewReader(serversByte))
 	if err != nil {
 		klog.Errorf("Request error %v", err)
 		return nil, err
 	}
-	req.Header.Set("Content-Type", "text/plain")
+	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", token)
 	req.Header.Set("Date", time.Now().UTC().Format(time.RFC1123))
 	res, err := client.Do(req)
@@ -338,20 +338,20 @@ func modifyListener(url, token, listenerid string, opts CreateListenerOpts) (*Li
 	}
 	client := &http.Client{Transport: tr}
 	reqUrl := url + "/" + opts.SLBId + "/listeners/" + listenerid
-	klog.Infof("requestUrl is ",reqUrl)
-	klog.Infof("token is ",token)
+	klog.Infof("requestUrl is ", reqUrl)
+	klog.Infof("token is ", token)
 	serversByte, err := json.Marshal(&opts)
 	if nil != err {
 		klog.Errorf("opts conver to bytes error %v", err)
 		return nil, err
 	}
-	klog.Infof("requestBody is ",string(serversByte))
+	klog.Infof("requestBody is ", string(serversByte))
 	req, err := http.NewRequest("PUT", reqUrl, bytes.NewReader(serversByte))
 	if err != nil {
 		klog.Errorf("Request error %v", err)
 		return nil, err
 	}
-	req.Header.Set("Content-Type", "text/plain")
+	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", token)
 	req.Header.Set("Date", time.Now().UTC().Format(time.RFC1123))
 	res, err := client.Do(req)
@@ -384,8 +384,8 @@ func deleteListener(url, token, slbId, listnerId string) error {
 	}
 	client := &http.Client{Transport: tr}
 	reqUrl := url + "/" + slbId + "/listeners/" + listnerId
-	klog.Infof("requestUrl is ",reqUrl)
-	klog.Infof("token is ",token)
+	klog.Infof("requestUrl is ", reqUrl)
+	klog.Infof("token is ", token)
 	req, err := http.NewRequest("DELETE", reqUrl, nil)
 	if err != nil {
 		klog.Errorf("Request error %v", err)
@@ -428,8 +428,8 @@ func createBackend(url, token string, opts CreateBackendOpts) (*BackendList, err
 	}
 	client := &http.Client{Transport: tr}
 	reqUrl := url + "/" + opts.SLBId + "/listeners/" + opts.ListenerId + "/members"
-	klog.Infof("requestUrl is ",reqUrl)
-	klog.Infof("token is ",token)
+	klog.Infof("requestUrl is ", reqUrl)
+	klog.Infof("token is ", token)
 	serversByte, err := json.Marshal(&opts.Servers)
 	if nil != err {
 		klog.Errorf("servers conver to bytes error %v", err)
@@ -440,7 +440,7 @@ func createBackend(url, token string, opts CreateBackendOpts) (*BackendList, err
 		klog.Errorf("Request error %v", err)
 		return nil, err
 	}
-	req.Header.Set("Content-Type", "text/plain")
+	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", token)
 	req.Header.Set("Date", time.Now().UTC().Format(time.RFC1123))
 	res, err := client.Do(req)
@@ -474,8 +474,8 @@ func describeBackendservers(url, token, slbId, listnerId string) ([]Backend, err
 	}
 	client := &http.Client{Transport: tr}
 	reqUrl := url + "/" + slbId + "/listeners/" + listnerId + "/members"
-	klog.Infof("requestUrl is ",reqUrl)
-	klog.Infof("token is ",token)
+	klog.Infof("requestUrl is ", reqUrl)
+	klog.Infof("token is ", token)
 	req, err := http.NewRequest("GET", reqUrl, nil)
 	if err != nil {
 		klog.Errorf("Request error %v", err)
