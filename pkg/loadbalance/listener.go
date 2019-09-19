@@ -81,7 +81,7 @@ func GetListener(config *InCloud, listenerId string) (*Listener, error) {
 // get listener for a port or nil if does not exist
 func GetListenerForPort(existingListeners []Listener, port corev1.ServicePort) *Listener {
 	for _, l := range existingListeners {
-		if Protocol(l.Protocol) == toListenersProtocol(port.Protocol) && l.Port == int(port.Port) {
+		if Protocol(l.Protocol) == toListenersProtocol(port.Protocol) && l.Port == int(port.NodePort) {
 			return &l
 		}
 	}
@@ -273,7 +273,7 @@ func (l *Listener) UpdateListener() error {
 
 func checkPortInService(service *corev1.Service, port int) *corev1.ServicePort {
 	for index, p := range service.Spec.Ports {
-		if int(p.Port) == port {
+		if int(p.NodePort) == port {
 			return &service.Spec.Ports[index]
 		}
 	}

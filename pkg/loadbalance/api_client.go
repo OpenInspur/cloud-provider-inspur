@@ -77,8 +77,7 @@ func describeLoadBalancer(url, token, slbId string) (*LoadBalancer, error) {
 	}
 	client := &http.Client{Transport: tr}
 	reqUrl := url + "?slbId=" + slbId
-	klog.Infof("requestUrl is ", reqUrl)
-	klog.Infof("token is ", token)
+	klog.Infof("describeLoadBalancer requestUrl is %v,token is %v", reqUrl, token)
 	req, err := http.NewRequest("GET", reqUrl, nil)
 	if err != nil {
 		klog.Errorf("Request error %v", err)
@@ -99,7 +98,7 @@ func describeLoadBalancer(url, token, slbId string) (*LoadBalancer, error) {
 		return nil, err
 	}
 	if res.StatusCode != http.StatusOK {
-		klog.Errorf("response not ok %v", res)
+		klog.Errorf("response not ok %v", body)
 		return nil, fmt.Errorf("response not ok %d", res.StatusCode)
 	}
 	var result []LoadBalancer
@@ -129,9 +128,7 @@ func modifyLoadBalancer(url, token, slbId, slbName string) (*SlbResponse, error)
 		klog.Errorf("servers conver to bytes error %v", err)
 		return nil, err
 	}
-	klog.Infof("requestUrl is ", reqUrl)
-	klog.Infof("token is ", token)
-	klog.Infof("requestBody is ", string(slbNameByte))
+	klog.Infof("modifyLoadBalancer requestUrl is %v,requestBody is%v, token is %v", reqUrl, string(slbNameByte), token)
 	req, err := http.NewRequest("PUT", reqUrl, bytes.NewReader(slbNameByte))
 	if err != nil {
 		klog.Errorf("Request error %v", err)
@@ -152,7 +149,7 @@ func modifyLoadBalancer(url, token, slbId, slbName string) (*SlbResponse, error)
 		return nil, err
 	}
 	if res.StatusCode != http.StatusOK {
-		klog.Errorf("response not ok %v", res)
+		klog.Errorf("response not ok %v", body)
 		return nil, fmt.Errorf("response not ok %d", res.StatusCode)
 	}
 	var result SlbResponse
@@ -170,8 +167,7 @@ func deleteLoadBalancer(url, token, slbId string) error {
 	}
 	client := &http.Client{Transport: tr}
 	reqUrl := url + "/" + slbId
-	klog.Infof("requestUrl is ", reqUrl)
-	klog.Infof("token is ", token)
+	klog.Infof("deleteLoadBalancer requestUrl is %v,token is%v", reqUrl, token)
 	req, err := http.NewRequest("DELETE", reqUrl, nil)
 	if err != nil {
 		klog.Errorf("Request error %v", err)
@@ -192,7 +188,7 @@ func deleteLoadBalancer(url, token, slbId string) error {
 		return err
 	}
 	if res.StatusCode != http.StatusAccepted {
-		klog.Errorf("response not ok %v", res)
+		klog.Errorf("response not ok %v", body)
 		return fmt.Errorf("response not ok %d", res.StatusCode)
 	}
 	var result BackendList
@@ -213,8 +209,7 @@ func describeListenersBySlbId(url, token, slbId string) ([]Listener, error) {
 	}
 	client := &http.Client{Transport: tr}
 	reqUrl := url + "/" + slbId + "/listeners"
-	klog.Infof("requestUrl is ", reqUrl)
-	klog.Infof("token is ", token)
+	klog.Infof("describeListenersBySlbId requestUrl is %v,token is %v", reqUrl, token)
 	req, err := http.NewRequest("GET", reqUrl, nil)
 	if err != nil {
 		klog.Errorf("Request error %v", err)
@@ -235,7 +230,7 @@ func describeListenersBySlbId(url, token, slbId string) ([]Listener, error) {
 		return nil, err
 	}
 	if res.StatusCode != http.StatusOK {
-		klog.Errorf("response not ok %v", res)
+		klog.Errorf("response not ok %v", body)
 		return nil, fmt.Errorf("response not ok %d", res.StatusCode)
 	}
 	var result []Listener
@@ -253,6 +248,7 @@ func describeListenerByListnerId(url, token, slbId, listnerId string) (*Listener
 	}
 	client := &http.Client{Transport: tr}
 	reqUrl := url + "/" + slbId + "/listeners/" + listnerId
+	klog.Infof("describeListenerByListnerId requestUrl is %v,token is %v", reqUrl, token)
 	req, err := http.NewRequest("GET", reqUrl, nil)
 	if err != nil {
 		klog.Errorf("Request error %v", err)
@@ -273,7 +269,7 @@ func describeListenerByListnerId(url, token, slbId, listnerId string) (*Listener
 		return nil, err
 	}
 	if res.StatusCode != http.StatusOK {
-		klog.Errorf("response not ok %v", res)
+		klog.Errorf("response not ok %v", body)
 		return nil, fmt.Errorf("response not ok %d", res.StatusCode)
 	}
 	var result Listener
@@ -291,8 +287,7 @@ func createListener(url, token string, opts CreateListenerOpts) (*Listener, erro
 	}
 	client := &http.Client{Transport: tr}
 	reqUrl := url + "/" + opts.SLBId + "/listeners/"
-	klog.Infof("requestUrl is ", reqUrl)
-	klog.Infof("token is ", token)
+	klog.Infof("createListener requestUrl:%v,token:%v", reqUrl, token)
 	serversByte, err := json.Marshal(&opts)
 	if nil != err {
 		klog.Errorf("opts conver to bytes error %v", err)
@@ -319,7 +314,7 @@ func createListener(url, token string, opts CreateListenerOpts) (*Listener, erro
 		return nil, err
 	}
 	if res.StatusCode != http.StatusOK {
-		klog.Errorf("response not ok %v", res)
+		klog.Errorf("response not ok:%v", body)
 		return nil, fmt.Errorf("response not ok %d", res.StatusCode)
 	}
 	var result Listener
@@ -338,8 +333,7 @@ func modifyListener(url, token, listenerid string, opts CreateListenerOpts) (*Li
 	}
 	client := &http.Client{Transport: tr}
 	reqUrl := url + "/" + opts.SLBId + "/listeners/" + listenerid
-	klog.Infof("requestUrl is ", reqUrl)
-	klog.Infof("token is ", token)
+	klog.Infof("modifyListener requestUrl:%v,token%v", reqUrl, token)
 	serversByte, err := json.Marshal(&opts)
 	if nil != err {
 		klog.Errorf("opts conver to bytes error %v", err)
@@ -366,7 +360,7 @@ func modifyListener(url, token, listenerid string, opts CreateListenerOpts) (*Li
 		return nil, err
 	}
 	if res.StatusCode != http.StatusOK {
-		klog.Errorf("response not ok %v", res)
+		klog.Errorf("response not ok %v", body)
 		return nil, fmt.Errorf("response not ok %d", res.StatusCode)
 	}
 	var result Listener
@@ -384,8 +378,7 @@ func deleteListener(url, token, slbId, listnerId string) error {
 	}
 	client := &http.Client{Transport: tr}
 	reqUrl := url + "/" + slbId + "/listeners/" + listnerId
-	klog.Infof("requestUrl is ", reqUrl)
-	klog.Infof("token is ", token)
+	klog.Infof("deleteListener requestUrl:%v,token:%v", reqUrl, token)
 	req, err := http.NewRequest("DELETE", reqUrl, nil)
 	if err != nil {
 		klog.Errorf("Request error %v", err)
@@ -406,7 +399,7 @@ func deleteListener(url, token, slbId, listnerId string) error {
 		return err
 	}
 	if res.StatusCode != http.StatusNoContent {
-		klog.Errorf("response not ok %v", res)
+		klog.Errorf("response not ok %v", body)
 		return fmt.Errorf("response not ok %d", res.StatusCode)
 	}
 	var result BackendList
@@ -428,8 +421,7 @@ func createBackend(url, token string, opts CreateBackendOpts) (*BackendList, err
 	}
 	client := &http.Client{Transport: tr}
 	reqUrl := url + "/" + opts.SLBId + "/listeners/" + opts.ListenerId + "/members"
-	klog.Infof("requestUrl is ", reqUrl)
-	klog.Infof("token is ", token)
+	klog.Infof("createBackend requestUrl:%v,token:%v", reqUrl, token)
 	serversByte, err := json.Marshal(&opts.Servers)
 	if nil != err {
 		klog.Errorf("servers conver to bytes error %v", err)
@@ -455,7 +447,7 @@ func createBackend(url, token string, opts CreateBackendOpts) (*BackendList, err
 		return nil, err
 	}
 	if res.StatusCode != http.StatusOK {
-		klog.Errorf("response not ok %v", res)
+		klog.Errorf("response not ok %v", body)
 		return nil, fmt.Errorf("response not ok %d", res.StatusCode)
 	}
 	var result BackendList
@@ -468,14 +460,12 @@ func createBackend(url, token string, opts CreateBackendOpts) (*BackendList, err
 }
 
 func describeBackendservers(url, token, slbId, listnerId string) ([]Backend, error) {
-
 	tr := &http.Transport{
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 	}
 	client := &http.Client{Transport: tr}
 	reqUrl := url + "/" + slbId + "/listeners/" + listnerId + "/members"
-	klog.Infof("requestUrl is ", reqUrl)
-	klog.Infof("token is ", token)
+	klog.Infof("describeBackendservers requestUrl:%v, token:%v", reqUrl, token)
 	req, err := http.NewRequest("GET", reqUrl, nil)
 	if err != nil {
 		klog.Errorf("Request error %v", err)
@@ -496,7 +486,7 @@ func describeBackendservers(url, token, slbId, listnerId string) ([]Backend, err
 		return nil, err
 	}
 	if res.StatusCode != http.StatusOK {
-		klog.Errorf("response not ok %v", res)
+		klog.Errorf("response not ok %v", body)
 		return nil, fmt.Errorf("response not ok %d", res.StatusCode)
 	}
 	var result []Backend
@@ -510,7 +500,6 @@ func describeBackendservers(url, token, slbId, listnerId string) ([]Backend, err
 }
 
 func removeBackendServers(url, token, slbId, listnerId string, backendIdList []string) error {
-
 	tr := &http.Transport{
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 	}
@@ -521,6 +510,7 @@ func removeBackendServers(url, token, slbId, listnerId string, backendIdList []s
 		return err
 	}
 	reqUrl := url + "/" + slbId + "/listeners/" + listnerId + "/members" + "?backendIdList=" + string(backendByte)
+	klog.Infof("removeBackendServers requestUrl:%v, token:%v", reqUrl, token)
 	req, err := http.NewRequest("DELETE", reqUrl, nil)
 	if err != nil {
 		klog.Errorf("Request error %v", err)
@@ -541,7 +531,7 @@ func removeBackendServers(url, token, slbId, listnerId string, backendIdList []s
 		return err
 	}
 	if res.StatusCode != http.StatusOK {
-		klog.Errorf("response not ok %v", res)
+		klog.Errorf("response not ok %v", body)
 		return fmt.Errorf("response not ok %d", res.StatusCode)
 	}
 	var result BackendList

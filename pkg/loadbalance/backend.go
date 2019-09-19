@@ -79,12 +79,12 @@ func UpdateBackends(config *InCloud, listener *Listener, backends interface{}) e
 	}
 	backs, error := describeBackendservers(config.LbUrlPre, token, listener.SLBId, listener.ListenerId)
 	if error != nil {
-		klog.Infof("describeBackendservers failed ", error)
+		klog.Errorf("describeBackendservers failed ", error)
 		return error
 	}
 	nodes, ok := backends.([]*v1.Node)
 	if !ok {
-		klog.Infof("skip default backends update for type %s", reflect.TypeOf(backends))
+		klog.Errorf("skip default backends update for type %s", reflect.TypeOf(backends))
 		return nil
 	}
 	add, del := []*BackendServer{}, []string{}

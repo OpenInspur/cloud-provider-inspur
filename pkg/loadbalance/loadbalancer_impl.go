@@ -67,7 +67,7 @@ func (ic *InCloud) EnsureLoadBalancer(ctx context.Context, clusterName string, s
 		klog.Infof("EnsureLoadBalancer takes total %d seconds", elapsed/time.Second)
 	}()
 
-	klog.Infof("EnsureLoadBalancer(%v, %v, %v, %v, %v, %v, %v)", clusterName, service.Namespace, service.Name,
+	klog.V(4).Infof("EnsureLoadBalancer(%v, %v, %v, %v, %v, %v, %v)", clusterName, service.Namespace, service.Name,
 		service.Spec.LoadBalancerIP, service.Spec.Ports, nodes, service.Annotations)
 
 	if len(nodes) == 0 {
@@ -114,7 +114,7 @@ func (ic *InCloud) EnsureLoadBalancer(ctx context.Context, clusterName string, s
 			}
 
 		} else {
-			//TODO:
+			klog.Infof("Updating listener for port %d", int(port.Port))
 			_, erro := UpdateListener(ic, listener.ListenerId, CreateListenerOpts{
 				SLBId:         lb.SlbId,
 				ListenerName:  fmt.Sprintf("listener_%s_%d", ic.LbId, portIndex),
