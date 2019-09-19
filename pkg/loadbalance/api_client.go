@@ -320,6 +320,7 @@ func createListener(url, token string, opts CreateListenerOpts) (*Listener, erro
 	}
 	if res.StatusCode != http.StatusOK {
 		klog.Errorf("response not ok %v", res)
+		klog.Errorf("responsBody is ",string(body))
 		return nil, fmt.Errorf("response not ok %d", res.StatusCode)
 	}
 	var result Listener
