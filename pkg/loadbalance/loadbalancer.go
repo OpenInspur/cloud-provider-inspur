@@ -8,8 +8,7 @@ import (
 )
 
 var (
-	ErrorNotFoundInCloud   = fmt.Errorf("Cannot find lb in incloud")
-	ErrorSGNotFoundInCloud = fmt.Errorf("Cannot find security group in incloud")
+	ErrorNotFoundInCloud = fmt.Errorf("Cannot find lb in incloud")
 )
 
 type LoadBalancer struct {

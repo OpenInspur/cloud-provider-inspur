@@ -98,8 +98,19 @@ func UpdateBackends(config *InCloud, listener *Listener, backends interface{}) e
 			}
 		}
 		if !found {
+			addr, err := nodeAddressForLB(node)
+			if err != nil {
+				if err == ErrorBackendNotFound {
+					// Node failure, do not create member
+					klog.Warningf("Failed to create LB backend for node %s: %v", node.Name, err)
+					continue
+				} else {
+					return fmt.Errorf("error getting address for node %s: %v", node.Name, err)
+				}
+			}
 			server := new(BackendServer)
 			server.ServerId = (string)(node.UID)
+			server.ServerIp = addr
 			server.Port = listener.Port
 			server.ServerName = node.Name
 			server.ServierType = "ECS"

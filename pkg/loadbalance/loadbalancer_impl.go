@@ -67,9 +67,6 @@ func (ic *InCloud) EnsureLoadBalancer(ctx context.Context, clusterName string, s
 		klog.Infof("EnsureLoadBalancer takes total %d seconds", elapsed/time.Second)
 	}()
 
-	klog.V(4).Infof("EnsureLoadBalancer(%v, %v, %v, %v, %v, %v, %v)", clusterName, service.Namespace, service.Name,
-		service.Spec.LoadBalancerIP, service.Spec.Ports, nodes, service.Annotations)
-
 	if len(nodes) == 0 {
 		return nil, fmt.Errorf("there are no available nodes for LoadBalancer service %s/%s", service.Namespace, service.Name)
 	}
@@ -96,6 +93,7 @@ func (ic *InCloud) EnsureLoadBalancer(ctx context.Context, clusterName string, s
 	}
 	//create/update Listener
 	for portIndex, port := range ports {
+		klog.Infof("GetListenerForPort(ls, port),ls%v,port%v", ls, port)
 		listener := GetListenerForPort(ls, port)
 		//port not assigned
 		if listener == nil {
@@ -364,4 +362,23 @@ func getStringFromServiceAnnotation(service *v1.Service, annotationKey string, d
 	//if there is no annotation, set "settings" var to the value from cloud config
 	klog.Infof("Could not find a Service Annotation; falling back on cloud-config setting: %v = %v", annotationKey, defaultSetting)
 	return defaultSetting
+}
+
+// The LB needs to be configured with instance addresses on the same
+// subnet as the LB (aka opts.SubnetID).  Currently we're just
+// guessing that the node's InternalIP is the right address - and that
+// should be sufficient for all "normal" cases.
+func nodeAddressForLB(node *v1.Node) (string, error) {
+	addrs := node.Status.Addresses
+	if len(addrs) == 0 {
+		return "", ErrorBackendNotFound
+	}
+
+	for _, addr := range addrs {
+		if addr.Type == v1.NodeInternalIP {
+			return addr.Address, nil
+		}
+	}
+
+	return addrs[0].Address, nil
 }

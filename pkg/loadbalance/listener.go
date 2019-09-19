@@ -85,7 +85,6 @@ func GetListenerForPort(existingListeners []Listener, port corev1.ServicePort) *
 			return &l
 		}
 	}
-
 	return nil
 }
 
