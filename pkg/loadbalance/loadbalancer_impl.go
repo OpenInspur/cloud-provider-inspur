@@ -101,7 +101,7 @@ func (ic *InCloud) EnsureLoadBalancer(ctx context.Context, clusterName string, s
 			klog.Infof("Creating listener for port %d", int(port.NodePort))
 			listener, err = CreateListener(ic, CreateListenerOpts{
 				SLBId:         lb.SlbId,
-				ListenerName:  fmt.Sprintf("listener_%s_%d", ic.LbId, portIndex),
+				ListenerName:  fmt.Sprintf("listener_%s_%d", port, portIndex),
 				Protocol:      Protocol(port.Protocol),
 				Port:          port.NodePort,
 				ForwardRule:   forwardRule,
@@ -115,7 +115,7 @@ func (ic *InCloud) EnsureLoadBalancer(ctx context.Context, clusterName string, s
 			klog.Infof("Updating listener for port %d", int(port.NodePort))
 			_, erro := UpdateListener(ic, listener.ListenerId, CreateListenerOpts{
 				SLBId:         lb.SlbId,
-				ListenerName:  fmt.Sprintf("listener_%s_%d", ic.LbId, portIndex),
+				ListenerName:  fmt.Sprintf("listener_%s_%d", port, portIndex),
 				Protocol:      Protocol(port.Protocol),
 				Port:          port.NodePort,
 				ForwardRule:   forwardRule,
@@ -195,7 +195,7 @@ func (ic *InCloud) UpdateLoadBalancer(ctx context.Context, clusterName string, s
 			klog.Infof("Creating listener for port %d", int(port.NodePort))
 			listener, err = CreateListener(ic, CreateListenerOpts{
 				SLBId:         lb.SlbId,
-				ListenerName:  fmt.Sprintf("listener_%s_%d", lb.SlbId, portIndex),
+				ListenerName:  fmt.Sprintf("listener_%s_%d", port, portIndex),
 				Protocol:      Protocol(port.Protocol),
 				Port:          port.NodePort,
 				ForwardRule:   forwardRule,
@@ -210,7 +210,7 @@ func (ic *InCloud) UpdateLoadBalancer(ctx context.Context, clusterName string, s
 			//TODO:
 			_, erro := UpdateListener(ic, listener.ListenerId, CreateListenerOpts{
 				SLBId:         lb.SlbId,
-				ListenerName:  fmt.Sprintf("listener_%s_%d", lb.SlbId, portIndex),
+				ListenerName:  fmt.Sprintf("listener_%s_%d", port, portIndex),
 				Protocol:      Protocol(port.Protocol),
 				Port:          port.NodePort,
 				ForwardRule:   forwardRule,

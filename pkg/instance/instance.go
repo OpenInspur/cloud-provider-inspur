@@ -2,9 +2,7 @@ package instance
 
 import (
 	"k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
 	corev1lister "k8s.io/client-go/listers/core/v1"
-	"k8s.io/klog"
 )
 
 const (
@@ -32,7 +30,8 @@ type InstanceSpec struct {
 //}
 
 func (i *Instance) GetInstanceID() string {
-	return NodeNameToInstanceID(i.Name, i.nodeLister)
+	return ""
+	//return GetNodeInstanceID(i.Name, i.nodeLister)
 }
 
 //func (i *Instance) LoadQcInstance() error {
@@ -89,15 +88,7 @@ func (i *Instance) GetK8sAddress() ([]v1.NodeAddress, error) {
 
 // Make sure incloud instance hostname or override-hostname (if provided) is equal to InstanceId
 // Recommended to use override-hostname
-func NodeNameToInstanceID(name string, nodeLister corev1lister.NodeLister) string {
-	node, err := nodeLister.Get(name)
-	if err != nil {
-		if errors.IsNotFound(err) {
-			return name
-		}
-		klog.Errorf("Failed to get instance id of node %s, err:", name)
-		return ""
-	}
+func GetNodeInstanceID(node *v1.Node) string {
 	if instanceid, ok := node.GetAnnotations()[NodeAnnotationInstanceID]; ok {
 		return instanceid
 	}
