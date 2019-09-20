@@ -2,6 +2,7 @@ package loadbalance
 
 import (
 	"fmt"
+	"strings"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/klog"
@@ -81,7 +82,7 @@ func GetListener(config *InCloud, listenerId string) (*Listener, error) {
 // get listener for a port or nil if does not exist
 func GetListenerForPort(existingListeners []Listener, port corev1.ServicePort) *Listener {
 	for _, l := range existingListeners {
-		if Protocol(l.Protocol) == toListenersProtocol(port.Protocol) && l.Port == int(port.NodePort) {
+		if strings.ToLower(l.Protocol) == strings.ToLower(string(port.Protocol)) && l.Port == int(port.NodePort) {
 			return &l
 		}
 	}

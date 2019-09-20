@@ -422,7 +422,7 @@ func createBackend(url, token string, opts CreateBackendOpts) (*BackendList, err
 	client := &http.Client{Transport: tr}
 	reqUrl := url + "/" + opts.SLBId + "/listeners/" + opts.ListenerId + "/members"
 	klog.Infof("createBackend requestUrl:%v,token:%v", reqUrl, token)
-	serversByte, err := json.Marshal(&opts.Servers)
+	serversByte, err := json.Marshal(&opts)
 	klog.Infof("requestBody is ", string(serversByte))
 	if nil != err {
 		klog.Errorf("servers conver to bytes error %v", err)
