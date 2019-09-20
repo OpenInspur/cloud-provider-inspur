@@ -66,6 +66,7 @@ func (ic *InCloud) EnsureLoadBalancer(ctx context.Context, clusterName string, s
 		elapsed := time.Since(startTime)
 		klog.Infof("EnsureLoadBalancer takes total %d seconds", elapsed/time.Second)
 	}()
+	klog.Infof("EnsureLoadBalancer(%v, %v, %v)", clusterName, service.Namespace, service.Name)
 
 	if len(nodes) == 0 {
 		return nil, fmt.Errorf("there are no available nodes for LoadBalancer service %s/%s", service.Namespace, service.Name)
@@ -93,7 +94,7 @@ func (ic *InCloud) EnsureLoadBalancer(ctx context.Context, clusterName string, s
 	}
 	//create/update Listener
 	for portIndex, port := range ports {
-		klog.Infof("GetListenerForPort(ls, port),ls%v,port%v", ls, port)
+		klog.Infof("GetListenerForPort,ls%v,port%v", ls, port)
 		listener := GetListenerForPort(ls, port)
 		//port not assigned
 		if listener == nil {
@@ -110,7 +111,6 @@ func (ic *InCloud) EnsureLoadBalancer(ctx context.Context, clusterName string, s
 				// Unknown error, retry later
 				return nil, fmt.Errorf("error creating LB listener: %v", err)
 			}
-
 		} else {
 			klog.Infof("Updating listener for port %d", int(port.NodePort))
 			_, erro := UpdateListener(ic, listener.ListenerId, CreateListenerOpts{
