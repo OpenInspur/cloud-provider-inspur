@@ -1,12 +1,9 @@
 package instance
 
 import (
+	"gitserver/kubernetes/inspur-cloud-controller-manager/pkg/common"
 	"k8s.io/api/core/v1"
 	corev1lister "k8s.io/client-go/listers/core/v1"
-)
-
-const (
-	NodeAnnotationInstanceID = "node.beta.kubernetes.io/instance-id"
 )
 
 type Instance struct {
@@ -89,7 +86,7 @@ func (i *Instance) GetK8sAddress() ([]v1.NodeAddress, error) {
 // Make sure incloud instance hostname or override-hostname (if provided) is equal to InstanceId
 // Recommended to use override-hostname
 func GetNodeInstanceID(node *v1.Node) string {
-	if instanceid, ok := node.GetAnnotations()[NodeAnnotationInstanceID]; ok {
+	if instanceid, ok := node.GetAnnotations()[common.NodeAnnotationInstanceID]; ok {
 		return instanceid
 	}
 	return node.Name

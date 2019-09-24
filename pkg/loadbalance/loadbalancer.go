@@ -351,7 +351,7 @@ func (lb *LoadBalancer) GetNodesInstanceIDs() []string {
 //	}
 //
 //	for _, listener := range listeners {
-//		if util.IntIndex(l.TCPPorts, *listener.ListenerPort) == -1 {
+//		if common.IntIndex(l.TCPPorts, *listener.ListenerPort) == -1 {
 //			err := l.lbExec.DeleteListener(*listener.LoadBalancerListenerID)
 //			if err != nil {
 //				klog.Errorf("Failed to delete listener %s", *listener.LoadBalancerListenerName)

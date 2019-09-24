@@ -3,20 +3,13 @@ package loadbalance
 import (
 	"context"
 	"fmt"
+	"gitserver/kubernetes/inspur-cloud-controller-manager/pkg/common"
 	"k8s.io/klog"
 	"strconv"
 	"time"
 
 	"k8s.io/api/core/v1"
 	"k8s.io/cloud-provider"
-)
-
-const (
-	ServiceAnnotationLoadBalancerInternal = "service.beta.kubernetes.io/inspur-internal-load-balancer"
-	//Listener forwardRule
-	ServiceAnnotationLoadBalancerForwardRule = "loadbalancer.inspur.com/forward-rule"
-	//Listener isHealthCheck
-	ServiceAnnotationLoadBalancerHealthCheck = "loadbalancer.inspur.com/is-healthcheck"
 )
 
 // LoadBalancer returns an implementation of LoadBalancer for InCloud.
@@ -80,8 +73,8 @@ func (ic *InCloud) EnsureLoadBalancer(ctx context.Context, clusterName string, s
 	ls, err := GetListeners(ic)
 	//verify scheme 负载均衡的网络模式，默认参数：internet-facing：公网（默认）internal：内网
 
-	forwardRule := getStringFromServiceAnnotation(service, ServiceAnnotationLoadBalancerForwardRule, "RR")
-	healthCheck := getStringFromServiceAnnotation(service, ServiceAnnotationLoadBalancerHealthCheck, "0")
+	forwardRule := getStringFromServiceAnnotation(service, common.ServiceAnnotationLBForwardRule, "RR")
+	healthCheck := getStringFromServiceAnnotation(service, common.ServiceAnnotationLBHealthCheck, "0")
 	hc, _ := strconv.ParseBool(healthCheck)
 	hcs := "0"
 	if hc {
@@ -175,8 +168,8 @@ func (ic *InCloud) UpdateLoadBalancer(ctx context.Context, clusterName string, s
 	ls, err := GetListeners(ic)
 	//verify scheme 负载均衡的网络模式，默认参数：internet-facing：公网（默认）internal：内网
 
-	forwardRule := getStringFromServiceAnnotation(service, ServiceAnnotationLoadBalancerForwardRule, "RR")
-	healthCheck := getStringFromServiceAnnotation(service, ServiceAnnotationLoadBalancerHealthCheck, "0")
+	forwardRule := getStringFromServiceAnnotation(service, common.ServiceAnnotationLBForwardRule, "RR")
+	healthCheck := getStringFromServiceAnnotation(service, common.ServiceAnnotationLBHealthCheck, "0")
 	hc, _ := strconv.ParseBool(healthCheck)
 	hcs := "0"
 	if hc {
@@ -239,31 +232,6 @@ func (ic *InCloud) UpdateLoadBalancer(ctx context.Context, clusterName string, s
 	//	status.Ingress = append(status.Ingress, v1.LoadBalancerIngress{IP: slbResponse.EipAddress})
 	//}
 	return nil
-
-	//startTime := time.Now()
-	//defer func() {
-	//	elapsed := time.Since(startTime)
-	//	klog.Infof("UpdateLoadBalancer takes total %d seconds", elapsed/time.Second)
-	//}()
-	//lb, err := ic.genLoadBalancer(ctx, clusterName, service, nodes)
-	//if err != nil {
-	//	return err
-	//}
-	//err = lb.GetLoadBalancer()
-	//if err != nil {
-	//	klog.Errorf("Failed to get lb %s in incloud of service %s", lb.Name, service.Name)
-	//	return err
-	//}
-	//err = lb.LoadListeners()
-	//if err != nil {
-	//	klog.Errorf("Failed to get listeners of lb %s of service %s", lb.Name, service.Name)
-	//	return err
-	//}
-	//listeners := lb.GetListeners()
-	//for _, listener := range listeners {
-	//	listener.UpdateListener()
-	//}
-
 }
 
 // EnsureLoadBalancerDeleted deletes the specified load balancer if it
@@ -275,7 +243,6 @@ func (ic *InCloud) UpdateLoadBalancer(ctx context.Context, clusterName string, s
 // Implementations must treat the *v1.Service parameter as read-only and not modify it.
 // Parameter 'clusterName' is the name of the cluster as presented to kube-controller-manager
 func (ic *InCloud) EnsureLoadBalancerDeleted(ctx context.Context, clusterName string, service *v1.Service) error {
-
 	klog.Infof("EnsureLoadBalancerDeleted(%v, %v)", clusterName, service.Name)
 
 	startTime := time.Now()
@@ -301,11 +268,6 @@ func (ic *InCloud) EnsureLoadBalancerDeleted(ctx context.Context, clusterName st
 		klog.Infof("get ls fail ,error : ", err)
 		return err
 	}
-	////verify scheme 负载均衡的网络模式，默认参数：internet-facing：公网（默认）internal：内网
-	//
-	//forwardRule := getStringFromServiceAnnotation(service, ServiceAnnotationLoadBalancerForwardRule, "RR")
-	//healthCheck := getStringFromServiceAnnotation(service, ServiceAnnotationLoadBalancerHealthCheck, "0")
-	//hc, _ := strconv.ParseBool(healthCheck)
 
 	//verify ports
 	ports := service.Spec.Ports
@@ -336,18 +298,6 @@ func (ic *InCloud) EnsureLoadBalancerDeleted(ctx context.Context, clusterName st
 			}
 		}
 	}
-	//err = DeleteLoadBalancer(ic)
-	//if nil != err {
-	//	klog.Infof("DeleteListener fail ,error : ", err)
-	//	return err
-	//}
-	//startTime := time.Now()
-	//defer func() {
-	//	elapsed := time.Since(startTime)
-	//	klog.Infof("DeleteLoadBalancer takes total %d seconds", elapsed/time.Second)
-	//}()
-	//lb, _ := ic.genLoadBalancer(ctx, clusterName, service, nil, true)
-	//return lb.DeleteQingCloudLB()
 	return nil
 }
 
