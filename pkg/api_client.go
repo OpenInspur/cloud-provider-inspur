@@ -29,44 +29,44 @@ type keycloakToken struct {
 }
 
 func getKeyCloakToken(requestedSubject, tokenClientId, clientSecret, keycloakUrl string, ic *InCloud) (string, error) {
-	//return ic.KeycloakToken, nil
-	var grantType = "urn:ietf:params:oauth:grant-type:token-exchange"
-	var requestTokenType = "urn:ietf:params:oauth:token-type:refresh_token"
-	var audience = "console"
-	strReq := "grant_type=" + grantType + "&client_id=" + tokenClientId + "&client_secret=" + clientSecret +
-		"&request_token_type=" + requestTokenType + "&requested_subject=" + requestedSubject + "&audience=" + audience
-	tr := &http.Transport{
-		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-	}
-	client := &http.Client{Transport: tr}
-	res, err1 := client.Post(keycloakUrl, "application/x-www-form-urlencoded", strings.NewReader(strReq))
-	if res != nil && res.StatusCode == 200 {
-		defer res.Body.Close()
-		body, err2 := ioutil.ReadAll(res.Body)
-		if err2 == nil {
-			var token keycloakToken
-			if err3 := json.Unmarshal(body, &token); err3 == nil {
-				klog.Info("token is " + token.AccessToken)
-				return "Bearer " + token.AccessToken, nil
-			} else {
-				klog.Errorf("error to Unmarshal(body, &token): %v", err3)
-				return "", err3
-			}
-		} else {
-			klog.Errorf("error to read all res1.Body %v", err2)
-			return "", err2
-		}
-	} else {
-		if err1 != nil {
-			klog.Errorf("post request keycloak err: %v", err1)
-			return "", err1
-		}
-		if res != nil {
-			klog.Errorf("nil res or not ok status code, code: %d", res.StatusCode)
-			defer res.Body.Close()
-		}
-		return "", errors.New("nil res or not ok status code")
-	}
+	return ic.KeycloakToken, nil
+	//var grantType = "urn:ietf:params:oauth:grant-type:token-exchange"
+	//var requestTokenType = "urn:ietf:params:oauth:token-type:refresh_token"
+	//var audience = "console"
+	//strReq := "grant_type=" + grantType + "&client_id=" + tokenClientId + "&client_secret=" + clientSecret +
+	//	"&request_token_type=" + requestTokenType + "&requested_subject=" + requestedSubject + "&audience=" + audience
+	//tr := &http.Transport{
+	//	TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+	//}
+	//client := &http.Client{Transport: tr}
+	//res, err1 := client.Post(keycloakUrl, "application/x-www-form-urlencoded", strings.NewReader(strReq))
+	//if res != nil && res.StatusCode == 200 {
+	//	defer res.Body.Close()
+	//	body, err2 := ioutil.ReadAll(res.Body)
+	//	if err2 == nil {
+	//		var token keycloakToken
+	//		if err3 := json.Unmarshal(body, &token); err3 == nil {
+	//			klog.Info("token is " + token.AccessToken)
+	//			return "Bearer " + token.AccessToken, nil
+	//		} else {
+	//			klog.Errorf("error to Unmarshal(body, &token): %v", err3)
+	//			return "", err3
+	//		}
+	//	} else {
+	//		klog.Errorf("error to read all res1.Body %v", err2)
+	//		return "", err2
+	//	}
+	//} else {
+	//	if err1 != nil {
+	//		klog.Errorf("post request keycloak err: %v", err1)
+	//		return "", err1
+	//	}
+	//	if res != nil {
+	//		klog.Errorf("nil res or not ok status code, code: %d", res.StatusCode)
+	//		defer res.Body.Close()
+	//	}
+	//	return "", errors.New("nil res or not ok status code")
+	//}
 }
 
 //http://cn-north-3.10.110.25.123.xip.io/slb/v1/slbs?slbId=123
@@ -98,11 +98,11 @@ func describeLoadBalancer(url, token, slbId string) (*LoadBalancer, error) {
 		return nil, err
 	}
 	if res.StatusCode != http.StatusOK {
-		klog.Errorf("response not ok %v", string(body))
+		klog.Errorf("response not ok:%v,%v", res.StatusCode, string(body))
 		return nil, fmt.Errorf("response not ok %d", res.StatusCode)
 	}
 	var result []LoadBalancer
-	klog.Infof("result is ", string(body))
+	klog.Infof("result is: ", res.StatusCode, string(body))
 	err = json.Unmarshal(body, &result)
 	if err != nil {
 		klog.Errorf("Unmarshal body fail: %v", err)
@@ -149,7 +149,7 @@ func modifyLoadBalancer(url, token, slbId, slbName string) (*SlbResponse, error)
 		return nil, err
 	}
 	if res.StatusCode != http.StatusOK {
-		klog.Errorf("response not ok %v", string(body))
+		klog.Errorf("response not ok:%v,%v", res.StatusCode, string(body))
 		return nil, fmt.Errorf("response not ok %d", res.StatusCode)
 	}
 	var result SlbResponse
@@ -188,7 +188,7 @@ func deleteLoadBalancer(url, token, slbId string) error {
 		return err
 	}
 	if res.StatusCode != http.StatusAccepted {
-		klog.Errorf("response not ok %v", string(body))
+		klog.Errorf("response not ok:%v,%v", res.StatusCode, string(body))
 		return fmt.Errorf("response not ok %d", res.StatusCode)
 	}
 	var result BackendList
@@ -230,7 +230,7 @@ func describeListenersBySlbId(url, token, slbId string) ([]Listener, error) {
 		return nil, err
 	}
 	if res.StatusCode != http.StatusOK {
-		klog.Errorf("response not ok %v", string(body))
+		klog.Errorf("response not ok:%v,%v", res.StatusCode, string(body))
 		return nil, fmt.Errorf("response not ok %d", res.StatusCode)
 	}
 	var result []Listener
@@ -269,7 +269,7 @@ func describeListenerByListnerId(url, token, slbId, listnerId string) (*Listener
 		return nil, err
 	}
 	if res.StatusCode != http.StatusOK {
-		klog.Errorf("response not ok %v", string(body))
+		klog.Errorf("response not ok:%v,%v", res.StatusCode, string(body))
 		return nil, fmt.Errorf("response not ok %d", res.StatusCode)
 	}
 	var result Listener
@@ -314,7 +314,7 @@ func createListener(url, token string, opts CreateListenerOpts) (*Listener, erro
 		return nil, err
 	}
 	if res.StatusCode != http.StatusOK {
-		klog.Errorf("response not ok:%v", string(body))
+		klog.Errorf("response not ok:%v,%v", res.StatusCode, string(body))
 		return nil, fmt.Errorf("response not ok %d", res.StatusCode)
 	}
 	var result Listener
@@ -360,7 +360,7 @@ func modifyListener(url, token, listenerid string, opts CreateListenerOpts) (*Li
 		return nil, err
 	}
 	if res.StatusCode != http.StatusOK {
-		klog.Errorf("response not ok %v", string(body))
+		klog.Errorf("response not ok:%v,%v", res.StatusCode, string(body))
 		return nil, fmt.Errorf("response not ok %d", res.StatusCode)
 	}
 	var result Listener
@@ -438,7 +438,7 @@ func createBackend(url, token string, opts CreateBackendOpts) (*BackendList, err
 		return nil, err
 	}
 	if res.StatusCode != http.StatusOK {
-		klog.Errorf("response not ok %v", string(body))
+		klog.Errorf("response not ok:%v,%v", res.StatusCode, string(body))
 		return nil, fmt.Errorf("response not ok %d", res.StatusCode)
 	}
 	var result BackendList
@@ -477,7 +477,7 @@ func describeBackendservers(url, token, slbId, listnerId string) ([]Backend, err
 		return nil, err
 	}
 	if res.StatusCode != http.StatusOK {
-		klog.Errorf("response not ok %v", string(body))
+		klog.Errorf("response not ok:%v,%v", res.StatusCode, string(body))
 		return nil, fmt.Errorf("response not ok %d", res.StatusCode)
 	}
 	var result []Backend

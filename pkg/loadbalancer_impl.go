@@ -59,7 +59,7 @@ func (ic *InCloud) EnsureLoadBalancer(ctx context.Context, clusterName string, s
 		elapsed := time.Since(startTime)
 		klog.Infof("EnsureLoadBalancer takes total %d seconds", elapsed/time.Second)
 	}()
-	klog.Infof("EnsureLoadBalancer(%v, %v, %v, %v)", clusterName, service.Namespace, service.Name, nodes)
+	klog.Infof("EnsureLoadBalancer(%v, %v, %v)", clusterName, service.Namespace, service.Name)
 
 	if len(nodes) == 0 {
 		return nil, fmt.Errorf("there are no available nodes for LoadBalancer service %s/%s", service.Namespace, service.Name)
