@@ -59,7 +59,7 @@ func (ic *InCloud) EnsureLoadBalancer(ctx context.Context, clusterName string, s
 		elapsed := time.Since(startTime)
 		klog.Infof("EnsureLoadBalancer takes total %d seconds", elapsed/time.Second)
 	}()
-	klog.Infof("EnsureLoadBalancer(%v, %v, %v)", clusterName, service.Namespace, service.Name)
+	klog.Infof("EnsureLoadBalancer(%v, %v, %v, %v)", clusterName, service.Namespace, service.Name, nodes)
 
 	if len(nodes) == 0 {
 		return nil, fmt.Errorf("there are no available nodes for LoadBalancer service %s/%s", service.Namespace, service.Name)
@@ -243,16 +243,14 @@ func (ic *InCloud) UpdateLoadBalancer(ctx context.Context, clusterName string, s
 // Implementations must treat the *v1.Service parameter as read-only and not modify it.
 // Parameter 'clusterName' is the name of the cluster as presented to kube-controller-manager
 func (ic *InCloud) EnsureLoadBalancerDeleted(ctx context.Context, clusterName string, service *v1.Service) error {
-	klog.Infof("EnsureLoadBalancerDeleted(%v, %v)", clusterName, service.Name)
-
 	startTime := time.Now()
 	defer func() {
 		elapsed := time.Since(startTime)
 		klog.Infof("EnsureLoadBalancerDeleted takes total %d seconds", elapsed/time.Second)
 	}()
 
-	klog.Infof("EnsureLoadBalancerDeleted(%v, %v, %v, %v, %v, %v)", clusterName, service.Namespace, service.Name,
-		service.Spec.LoadBalancerIP, service.Spec.Ports, service.Annotations)
+	klog.Infof("EnsureLoadBalancerDeleted(%v, %v, %v, %v, %v)", clusterName, service.Namespace, service.Name,
+		service.Spec.LoadBalancerIP, service.Spec.Ports)
 
 	lb, error := GetLoadBalancer(ic)
 	if error != nil {

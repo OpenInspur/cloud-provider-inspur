@@ -399,18 +399,8 @@ func deleteListener(url, token, slbId, listnerId string) error {
 		return err
 	}
 	if res.StatusCode != http.StatusNoContent {
-		klog.Errorf("response not ok %v", string(body))
+		klog.Errorf("response not ok:%v, %v", res.StatusCode, string(body))
 		return fmt.Errorf("response not ok %d", res.StatusCode)
-	}
-	var result BackendList
-	err = json.Unmarshal(body, &result)
-	if err != nil {
-		klog.Errorf("Unmarshal body fail: %v", err)
-		return err
-	}
-	if result.code != strconv.Itoa(http.StatusNoContent) {
-		klog.Errorf("delete listener fail: %v", result.Message)
-		return errors.New(result.Message)
 	}
 	return nil
 }
@@ -505,12 +495,7 @@ func removeBackendServers(url, token, slbId, listnerId string, backendIdList []s
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 	}
 	client := &http.Client{Transport: tr}
-	backendByte, err := json.Marshal(&backendIdList)
-	if err != nil {
-		klog.Errorf("parse json error %v", err)
-		return err
-	}
-	reqUrl := url + "/" + slbId + "/listeners/" + listnerId + "/members" + "?backendIdList=" + string(backendByte)
+	reqUrl := url + "/" + slbId + "/listeners/" + listnerId + "/members" + "?backendIdList=" + strings.Join(backendIdList, ",")
 	klog.Infof("removeBackendServers requestUrl:%v, token:%v", reqUrl, token)
 	req, err := http.NewRequest("DELETE", reqUrl, nil)
 	if err != nil {
@@ -532,18 +517,8 @@ func removeBackendServers(url, token, slbId, listnerId string, backendIdList []s
 		return err
 	}
 	if res.StatusCode != http.StatusOK {
-		klog.Errorf("response not ok %v", string(body))
+		klog.Errorf("response not ok:%v, %v", res.StatusCode, string(body))
 		return fmt.Errorf("response not ok %d", res.StatusCode)
-	}
-	var result BackendList
-	err = json.Unmarshal(body, &result)
-	if err != nil {
-		klog.Errorf("Unmarshal body fail: %v", err)
-		return err
-	}
-	if result.code != strconv.Itoa(http.StatusOK) {
-		klog.Errorf("Delete backend fail: %v", result.Message)
-		return errors.New(result.Message)
 	}
 	return nil
 }
