@@ -4,6 +4,7 @@ const (
 	/*LoadBalancer
 	 */
 
+	//service定义时使用
 	ServiceAnnotationLBInternal = "service.beta.kubernetes.io/inspur-internal-load-balancer"
 	//Listener forwardRule
 	ServiceAnnotationLBForwardRule = "loadbalancer.inspur.com/forward-rule"

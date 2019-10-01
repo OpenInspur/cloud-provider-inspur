@@ -1,6 +1,6 @@
 //暂不实现
 
-package loadbalance
+package pkg
 
 import (
 	"k8s.io/cloud-provider"

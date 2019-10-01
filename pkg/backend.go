@@ -1,8 +1,7 @@
-package loadbalance
+package pkg
 
 import (
 	"fmt"
-	"gitserver/kubernetes/inspur-cloud-controller-manager/pkg/instance"
 	"k8s.io/api/core/v1"
 	"k8s.io/klog"
 	"reflect"
@@ -110,7 +109,7 @@ func UpdateBackends(config *InCloud, listener *Listener, backends interface{}) e
 				}
 			}
 			server := new(BackendServer)
-			server.ServerId = instance.GetNodeInstanceID(node)
+			server.ServerId = GetNodeInstanceID(node)
 			server.ServerIp = addr
 			server.Port = listener.Port
 			server.ServerName = node.Name

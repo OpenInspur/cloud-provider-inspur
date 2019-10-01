@@ -1,4 +1,4 @@
-package instance
+package pkg
 
 import (
 	"gitserver/kubernetes/inspur-cloud-controller-manager/pkg/common"
