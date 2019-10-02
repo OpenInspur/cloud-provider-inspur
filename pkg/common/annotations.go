@@ -5,7 +5,7 @@ const (
 	 */
 
 	//service定义时使用
-	ServiceAnnotationLBInternal = "service.beta.kubernetes.io/inspur-internal-load-balancer"
+	ServiceAnnotationInternalSlbId = "service.beta.kubernetes.io/inspur-internal-load-balancer-slbid"
 	//Listener forwardRule
 	ServiceAnnotationLBForwardRule = "loadbalancer.inspur.com/forward-rule"
 	//Listener isHealthCheck

@@ -2,6 +2,7 @@ package pkg
 
 import (
 	"fmt"
+	"gitserver/kubernetes/inspur-cloud-controller-manager/pkg/common"
 	"k8s.io/api/core/v1"
 	"k8s.io/klog"
 	"reflect"
@@ -71,7 +72,7 @@ func CreateBackends(config *InCloud, opts CreateBackendOpts) (*BackendList, erro
 	return createBackend(config.LbUrlPre, token, opts)
 }
 
-func UpdateBackends(config *InCloud, listener *Listener, backends interface{}) error {
+func UpdateBackends(config *InCloud, service *v1.Service, listener *Listener, backends interface{}) error {
 	//先查询listenner关联的backends
 	token, error := getKeyCloakToken(config.RequestedSubject, config.TokenClientID, config.ClientSecret, config.KeycloakUrl, config)
 	if error != nil {
@@ -143,7 +144,7 @@ func UpdateBackends(config *InCloud, listener *Listener, backends interface{}) e
 		}
 	}
 	if len(del) > 0 {
-		DeleteBackends(config, listener.ListenerId, del)
+		DeleteBackends(config, service, listener.ListenerId, del)
 		if nil != err {
 			klog.Infof("DeleteBackends failed: ", err)
 			return err
@@ -152,23 +153,30 @@ func UpdateBackends(config *InCloud, listener *Listener, backends interface{}) e
 	return nil
 }
 
-func DeleteBackends(config *InCloud, listenerId string, backendIdList []string) error {
-
+func DeleteBackends(config *InCloud, service *v1.Service, listenerId string, backendIdList []string) error {
 	token, error := getKeyCloakToken(config.RequestedSubject, config.TokenClientID, config.ClientSecret, config.KeycloakUrl, config)
 	if error != nil {
 		return error
 	}
-	error = removeBackendServers(config.LbUrlPre, token, config.LbId, listenerId, backendIdList)
+	slbid := getServiceAnnotation(service, common.ServiceAnnotationInternalSlbId, "")
+	if slbid == "" {
+		slbid = config.LbId
+	}
+	error = removeBackendServers(config.LbUrlPre, token, slbid, listenerId, backendIdList)
 
 	return error
 }
 
-func GetBackends(config *InCloud, listenerId string) ([]Backend, error) {
+func GetBackends(config *InCloud, service *v1.Service, listenerId string) ([]Backend, error) {
 	token, error := getKeyCloakToken(config.RequestedSubject, config.TokenClientID, config.ClientSecret, config.KeycloakUrl, config)
 	if error != nil {
 		return nil, error
 	}
-	backends, error := describeBackendservers(config.LbUrlPre, token, config.LbId, listenerId)
+	slbid := getServiceAnnotation(service, common.ServiceAnnotationInternalSlbId, "")
+	if slbid == "" {
+		slbid = config.LbId
+	}
+	backends, error := describeBackendservers(config.LbUrlPre, token, slbid, listenerId)
 	if nil != error {
 		klog.Infof("GetBackends failed: ", error)
 		return nil, error
