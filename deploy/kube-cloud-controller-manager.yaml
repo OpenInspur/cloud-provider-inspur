@@ -21,7 +21,7 @@ spec:
         node-role.kubernetes.io/master: "true"
       containers:
         - name: incloud-cloud-controller-manager
-          image: registry.inspurcloud.cn:5000/csf/cloud-controller-manager
+          image: registry.inspurcloud.cn:5000/csf/inspur-cloud-controller-manager
           imagePullPolicy: IfNotPresent
           command:
             - /manager
