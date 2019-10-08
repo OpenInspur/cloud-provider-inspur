@@ -4,7 +4,6 @@ kind: Deployment
 metadata:
   name: external-http-nginx-deployment
   annotations:
-    service.beta.kubernetes.io/inspur-internal-load-balancer: "false"
 spec:
   replicas: 2
   template:
@@ -22,6 +21,10 @@ kind: Service
 apiVersion: v1
 metadata:
   name: external-http-nginx-service
+  annotations:
+    service.beta.kubernetes.io/inspur-load-balancer-slbid:
+    loadbalancer.inspur.com/forward-rule: "RR"
+    loadbalancer.inspur.com/is-healthcheck: "0"
 spec:
   selector:
     app: nginx
