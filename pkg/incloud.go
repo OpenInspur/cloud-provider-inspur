@@ -19,13 +19,6 @@ const (
 	ProviderName = "incloud"
 )
 
-type LoadBalancerOpts struct {
-	SubnetID      string `gcfg:"subnet-id"`  //由于loadbalancer本身不在cloud controller manager创建，不需要
-	SlbUrlPre     string `gcfg:"slburl-pre"` //cloud-config中配置slb url前缀；
-	SlbId         string `gcfg:"slbId"`      //创建集群时注入进来
-	KeycloakToken string `gcfg:"kktoken"`
-}
-
 type Config struct {
 	Global struct {
 		AuthURL    string `gcfg:"auth-url"`
@@ -56,7 +49,7 @@ type Config struct {
 		MasterAuthURL  string `gcfg:"master-auth-url"`
 		OpenApiVersion string `gcfg:"openapi-version"`
 		SubnetID       string `gcfg:"subnet-id"`  //由于loadbalancer本身不在cloud controller manager创建，不需要
-		SlbUrlPre      string `gcfg:"slburl-pre"` //cloud-config中配置slb url前缀；
+		SlbUrlPre      string `gcfg:"slbUrl-pre"` //cloud-config中配置slb url前缀；
 		SlbId          string `gcfg:"slbId"`      //创建集群时注入进来
 		KeycloakToken  string `gcfg:"kktoken"`
 	}
