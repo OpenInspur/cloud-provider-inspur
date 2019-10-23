@@ -1,5 +1,5 @@
 # Copy the controller-manager into a thin image
-FROM ubuntu
+FROM tutum/curl
 MAINTAINER zhang yong
 WORKDIR /
 COPY main manager
