@@ -1,5 +1,5 @@
 # Copy the controller-manager into a thin image
-FROM tutum/curl
+FROM registry.icp.com:5000/apigateway/busybox-curl
 MAINTAINER zhang yong
 WORKDIR /
 COPY main manager
