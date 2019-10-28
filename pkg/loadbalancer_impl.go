@@ -28,7 +28,7 @@ func (ic *InCloud) GetLoadBalancer(ctx context.Context, clusterName string, serv
 	if err != nil {
 		if err == ErrorNoSLBIdDefined {
 			klog.Infof("Service:%s/%s isn't inspur loadbalancer type", service.Namespace, service.Name)
-			return nil, false, nil
+			return &v1.LoadBalancerStatus{}, false, nil
 		}
 		klog.Errorf("Failed to call 'GetLoadBalancer' of service %s,slb Id:%s", service.Name, lb.SlbId)
 		return nil, false, err
@@ -75,7 +75,7 @@ func (ic *InCloud) EnsureLoadBalancer(ctx context.Context, clusterName string, s
 	if err != nil {
 		if err == ErrorNoSLBIdDefined {
 			klog.Infof("Service:%s/%s isn't inspur loadbalancer type", service.Namespace, service.Name)
-			return nil, nil
+			return &v1.LoadBalancerStatus{}, nil
 		}
 		klog.Errorf("Failed to get lb by slbId:%s in incloud of service:%s,error:%v", lb.SlbId, service.Name, err)
 		return nil, err
