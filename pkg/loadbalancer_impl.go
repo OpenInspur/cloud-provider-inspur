@@ -23,11 +23,14 @@ func (ic *InCloud) LoadBalancer() (cloudprovider.LoadBalancer, bool) {
 // GetLoadBalancer returns whether the specified load balancer exists, and
 // if so, what its status is.
 func (ic *InCloud) GetLoadBalancer(ctx context.Context, clusterName string, service *v1.Service) (status *v1.LoadBalancerStatus, exists bool, err error) {
-	//TODO 此处约定为
-	// 优先从service yaml的annotation取slbid，取不到则从创建集群时的slbid（注入到cloud-config中）
+	//TODO 此处约定为从service yaml的annotation取slbid
 	lb, err := GetLoadBalancer(ic, service)
 	if err != nil {
-		klog.Errorf("Failed to call 'GetLoadBalancer' of service %s,slb Id:%s", service.Name, ic.LbId)
+		if err == ErrorNoSLBIdDefined {
+			klog.Infof("Service:%s/%s isn't inspur loadbalancer type", service.Namespace, service.Name)
+			return nil, false, nil
+		}
+		klog.Errorf("Failed to call 'GetLoadBalancer' of service %s,slb Id:%s", service.Name, lb.SlbId)
 		return nil, false, err
 	}
 
@@ -44,7 +47,11 @@ func (ic *InCloud) GetLoadBalancer(ctx context.Context, clusterName string, serv
 func (ic *InCloud) GetLoadBalancerName(_ context.Context, clusterName string, service *v1.Service) string {
 	lb, err := GetLoadBalancer(ic, service)
 	if err != nil {
-		klog.Error("Failed to GetLoadBalancer by config:%v", ic)
+		if err == ErrorNoSLBIdDefined {
+			klog.Infof("Service:%s/%s isn't inspur loadbalancer type", service.Namespace, service.Name)
+			return ""
+		}
+		klog.Errorf("Failed to call 'GetLoadBalancer' of service %s,slb Id:%s", service.Name, lb.SlbId)
 		return ""
 	}
 	return lb.SlbName
@@ -64,6 +71,21 @@ func (ic *InCloud) EnsureLoadBalancer(ctx context.Context, clusterName string, s
 		klog.Infof("EnsureLoadBalancer takes total %d seconds", elapsed/time.Second)
 	}()
 
+	lb, err := GetLoadBalancer(ic, service)
+	if err != nil {
+		if err == ErrorNoSLBIdDefined {
+			klog.Infof("Service:%s/%s isn't inspur loadbalancer type", service.Namespace, service.Name)
+			return nil, nil
+		}
+		klog.Errorf("Failed to get lb by slbId:%s in incloud of service:%s,error:%v", lb.SlbId, service.Name, err)
+		return nil, err
+	}
+	if lb.SlbId == "" {
+		klog.Errorf("The service:%s don't specify service.beta.kubernetes.io/inspur-load-balancer-slbid", service.Name)
+		return nil, nil
+	}
+	ls, err := GetListeners(ic, service)
+
 	svcNodes, erro := getServiceNodes(service, nodes)
 	if erro != nil {
 		return nil, erro
@@ -72,13 +94,6 @@ func (ic *InCloud) EnsureLoadBalancer(ctx context.Context, clusterName string, s
 		return nil, fmt.Errorf("there are no available nodes for LoadBalancer service %s/%s", service.Namespace, service.Name)
 	}
 	klog.Infof("EnsureLoadBalancer(%v, %v, %v,%v)", clusterName, service.Namespace, service.Name, len(svcNodes))
-
-	lb, err := GetLoadBalancer(ic, service)
-	if err != nil {
-		klog.Errorf("Failed to get lb by slbId:%s in incloud of service %s", ic.LbId, service.Name)
-		return nil, err
-	}
-	ls, err := GetListeners(ic, service)
 	//verify scheme 负载均衡的网络模式，默认参数：internet-facing：公网（默认）internal：内网
 
 	forwardRule := getServiceAnnotation(service, common.ServiceAnnotationLBForwardRule, "RR")
@@ -154,7 +169,11 @@ func (ic *InCloud) EnsureLoadBalancer(ctx context.Context, clusterName string, s
 func (ic *InCloud) UpdateLoadBalancer(ctx context.Context, clusterName string, service *v1.Service, nodes []*v1.Node) error {
 	lb, err := GetLoadBalancer(ic, service)
 	if err != nil {
-		klog.Error("Failed to GetLoadBalancer by %v", ic)
+		if err == ErrorNoSLBIdDefined {
+			klog.Infof("Service:%s/%s isn't inspur loadbalancer type", service.Namespace, service.Name)
+			return nil
+		}
+		klog.Errorf("Failed to get lb by slbId:%s in incloud of service:%s,error:%v", lb.SlbId, service.Name, err)
 		return err
 	}
 
@@ -264,7 +283,11 @@ func (ic *InCloud) EnsureLoadBalancerDeleted(ctx context.Context, clusterName st
 
 	lb, error := GetLoadBalancer(ic, service)
 	if error != nil {
-		klog.Infof("GetLoadBalancer fail , error :", error)
+		if error == ErrorNoSLBIdDefined {
+			klog.Infof("Service:%s/%s isn't inspur loadbalancer type", service.Namespace, service.Name)
+			return nil
+		}
+		klog.Errorf("Failed to get lb by slbId:%s in incloud of service:%s,error:%v", lb.SlbId, service.Name, error)
 		return error
 	}
 	if nil == lb {
