@@ -2,9 +2,11 @@ package pkg
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"gitserver/kubernetes/inspur-cloud-controller-manager/pkg/common"
 	"k8s.io/klog"
+	"os/exec"
 	"strconv"
 	"time"
 
@@ -54,6 +56,7 @@ func (ic *InCloud) GetLoadBalancerName(_ context.Context, clusterName string, se
 // Parameter 'clusterName' is the name of the cluster as presented to kube-controller-manager
 // by inspur
 // 这里不创建LoadBalancer，查询LoadBalancer，有则创建Listener以及backend，无则报错
+// 改进点：根据service查询后端pod所在节点，只注册pod所在节点到loadbalancer上，当pod漂移时，需要刷新loadbalancer的member；当pod个数变更时，需要刷新loadbalancer的member
 func (ic *InCloud) EnsureLoadBalancer(ctx context.Context, clusterName string, service *v1.Service, nodes []*v1.Node) (*v1.LoadBalancerStatus, error) {
 	startTime := time.Now()
 	defer func() {
@@ -61,10 +64,15 @@ func (ic *InCloud) EnsureLoadBalancer(ctx context.Context, clusterName string, s
 		klog.Infof("EnsureLoadBalancer takes total %d seconds", elapsed/time.Second)
 	}()
 
-	if len(nodes) == 0 {
+	svcNodes, erro := getServiceNodes(service, nodes)
+	if erro != nil {
+		return nil, erro
+	}
+	if len(svcNodes) == 0 {
 		return nil, fmt.Errorf("there are no available nodes for LoadBalancer service %s/%s", service.Namespace, service.Name)
 	}
-	klog.Infof("EnsureLoadBalancer(%v, %v, %v,%v)", clusterName, service.Namespace, service.Name, len(nodes))
+	klog.Infof("EnsureLoadBalancer(%v, %v, %v,%v)", clusterName, service.Namespace, service.Name, len(svcNodes))
+
 	lb, err := GetLoadBalancer(ic, service)
 	if err != nil {
 		klog.Errorf("Failed to get lb by slbId:%s in incloud of service %s", ic.LbId, service.Name)
@@ -125,7 +133,7 @@ func (ic *InCloud) EnsureLoadBalancer(ctx context.Context, clusterName string, s
 		if err != nil {
 			return nil, fmt.Errorf("failed to get LB listener %v: %v", ls.SLBId, ls.ListenerId)
 		}
-		err = UpdateBackends(ic, service, ls, nodes)
+		err = UpdateBackends(ic, service, ls, svcNodes)
 		if err != nil {
 			return nil, err
 		}
@@ -149,7 +157,6 @@ func (ic *InCloud) UpdateLoadBalancer(ctx context.Context, clusterName string, s
 		klog.Error("Failed to GetLoadBalancer by %v", ic)
 		return err
 	}
-	klog.Infof("UpdateLoadBalancer(%v, %v, %v)", clusterName, lb.SlbName, nodes)
 
 	startTime := time.Now()
 	defer func() {
@@ -157,11 +164,14 @@ func (ic *InCloud) UpdateLoadBalancer(ctx context.Context, clusterName string, s
 		klog.Infof("UpdateLoadBalancer takes total %d seconds", elapsed/time.Second)
 	}()
 
-	klog.Infof("UpdateLoadBalancer(%v, %v, %v, %v)", clusterName, service.Namespace, service.Name)
-
-	if len(nodes) == 0 {
+	svcNodes, erro := getServiceNodes(service, nodes)
+	if erro != nil {
+		return erro
+	}
+	if len(svcNodes) == 0 {
 		return fmt.Errorf("there are no available nodes for LoadBalancer service %s/%s", service.Namespace, service.Name)
 	}
+	klog.Infof("UpdateLoadBalancer(%v, %v, %v,%v)", clusterName, service.Namespace, service.Name, len(svcNodes))
 
 	//修改负载均衡信息，目前只支持修改名称。
 
@@ -220,7 +230,7 @@ func (ic *InCloud) UpdateLoadBalancer(ctx context.Context, clusterName string, s
 		if err != nil {
 			return fmt.Errorf("failed to get LB listener %v: %v", ls.SLBId, ls.ListenerId)
 		}
-		UpdateBackends(ic, service, ls, nodes)
+		UpdateBackends(ic, service, ls, svcNodes)
 	}
 
 	if err != nil {
@@ -331,4 +341,35 @@ func nodeAddressForLB(node *v1.Node) (string, error) {
 	}
 
 	return addrs[0].Address, nil
+}
+
+// 返回service聚合的pods所在的nodes
+func getServiceNodes(service *v1.Service, nodes []*v1.Node) ([]*v1.Node, error) {
+	labels := service.GetLabels()
+	if labels["app"] != "" {
+		lab := "app=" + labels["app"]
+		klog.Infof("app=+ labels[app]", lab)
+		auth := "Authorization: Bearer $(cat /var/run/secrets/kubernetes.io/serviceaccount/token)"
+		ns := service.Namespace
+		podsUrl := fmt.Sprintf("https://kubernetes.default.svc.cluster.local/api/v1/namespaces/%s/pods/?labelSelector=%s", ns, lab)
+		cmd1 := exec.Command("curl -k", "-H", auth, "-n", podsUrl)
+		res1, _ := cmd1.CombinedOutput()
+		klog.Info("cmd1.CombinedOutput()", string(res1))
+		var result v1.PodList
+		err := json.Unmarshal(res1, result)
+		if err != nil {
+			klog.Error("curl %s error:%s", podsUrl, err)
+			return nil, err
+		}
+		var retNodes = make([]*v1.Node, len(result.Items))
+		for _, item := range result.Items {
+			for _, node := range nodes {
+				if node.Name == item.Spec.NodeName {
+					retNodes = append(retNodes, node)
+				}
+			}
+		}
+		return retNodes, nil
+	}
+	return nil, fmt.Errorf("service:%s/%s dosen't have label(app)", service.Namespace, service.Name)
 }
