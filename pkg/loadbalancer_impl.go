@@ -373,7 +373,7 @@ func getServiceNodes(service *v1.Service, nodes []*v1.Node) ([]*v1.Node, error) 
 		podsUrl := fmt.Sprintf("https://kubernetes.default.svc.cluster.local/api/v1/namespaces/%s/pods/?labelSelector=%s", ns, sel)
 		cmd1 := exec.Command("curl", "-k", "-H", "\""+auth+"\"", podsUrl)
 		klog.Infof("cmd1:%v", cmd1)
-		res1, erro := cmd1.Output()
+		res1, erro := cmd1.CombinedOutput()
 		if erro != nil {
 			klog.Errorf("curl %s,error:%s,output:%v", podsUrl, erro, string(res1))
 			return nil, erro
