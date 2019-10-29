@@ -80,10 +80,7 @@ func (ic *InCloud) EnsureLoadBalancer(ctx context.Context, clusterName string, s
 		klog.Errorf("Failed to call 'GetLoadBalancer' of service:%s/%s,error:%v", service.Namespace, service.Name, err)
 		return nil, err
 	}
-	if lb.SlbId == "" {
-		klog.Errorf("The service:%s don't specify service.beta.kubernetes.io/inspur-load-balancer-slbid", service.Name)
-		return nil, nil
-	}
+
 	ls, err := GetListeners(ic, service)
 
 	svcNodes, erro := getServiceNodes(service, nodes)
@@ -343,7 +340,7 @@ func getServiceAnnotation(service *v1.Service, annotationKey string, defaultSett
 		return annotationValue
 	}
 	//if there is no annotation, set "settings" var to the value from cloud config
-	klog.Infof("Could not find a Service Annotation; falling back on cloud-config setting: %v = %v", annotationKey, defaultSetting)
+	klog.Infof("Could not find a Service Annotation:%s; falling back on default setting:%v", annotationKey, defaultSetting)
 	return defaultSetting
 }
 
@@ -368,13 +365,13 @@ func nodeAddressForLB(node *v1.Node) (string, error) {
 
 // 返回service聚合的pods所在的nodes
 func getServiceNodes(service *v1.Service, nodes []*v1.Node) ([]*v1.Node, error) {
-	labels := service.GetLabels()
-	if labels["app"] != "" {
-		lab := "app=" + labels["app"]
-		klog.Infof("app=+ labels[app]", lab)
+	spec := service.Spec
+	if spec.Selector["app"] != "" {
+		sel := "app=" + spec.Selector["app"]
+		klog.Infof("app=%s", sel)
 		auth := "Authorization: Bearer $(cat /var/run/secrets/kubernetes.io/serviceaccount/token)"
 		ns := service.Namespace
-		podsUrl := fmt.Sprintf("https://kubernetes.default.svc.cluster.local/api/v1/namespaces/%s/pods/?labelSelector=%s", ns, lab)
+		podsUrl := fmt.Sprintf("https://kubernetes.default.svc.cluster.local/api/v1/namespaces/%s/pods/?labelSelector=%s", ns, sel)
 		cmd1 := exec.Command("curl -k", "-H", auth, "-n", podsUrl)
 		res1, _ := cmd1.CombinedOutput()
 		klog.Info("cmd1.CombinedOutput()", string(res1))
@@ -394,5 +391,5 @@ func getServiceNodes(service *v1.Service, nodes []*v1.Node) ([]*v1.Node, error) 
 		}
 		return retNodes, nil
 	}
-	return nil, fmt.Errorf("service:%s/%s dosen't have label(app)", service.Namespace, service.Name)
+	return nil, fmt.Errorf("service:%s/%s dosen't have selector(app)", service.Namespace, service.Name)
 }
