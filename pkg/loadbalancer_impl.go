@@ -381,7 +381,7 @@ func getServiceNodes(service *v1.Service, nodes []*v1.Node) ([]*v1.Node, error) 
 		var result v1.PodList
 		err := json.Unmarshal(res1, result)
 		if err != nil {
-			klog.Errorf("json.Unmarshal error:%s,output:%v", err)
+			klog.Errorf("json.Unmarshal error:%s,output:%v", err, res1)
 			return nil, err
 		}
 		klog.Infof("v1.PodList:%v", result)
