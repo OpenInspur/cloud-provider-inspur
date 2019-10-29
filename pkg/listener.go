@@ -48,7 +48,7 @@ func GetListeners(config *InCloud, service *corev1.Service) ([]Listener, error) 
 	}
 	slbid := getServiceAnnotation(service, common.ServiceAnnotationInternalSlbId, "")
 	if slbid == "" {
-		return nil, ErrorNoSLBIdDefined
+		return nil, ErrorSlbIdNotDefined
 	}
 	ls, err := describeListenersBySlbId(config.LbUrlPre, token, slbid)
 	if err != nil {
@@ -70,7 +70,7 @@ func GetListener(config *InCloud, service *corev1.Service, listenerId string) (*
 	}
 	slbid := getServiceAnnotation(service, common.ServiceAnnotationInternalSlbId, "")
 	if slbid == "" {
-		return nil, ErrorNoSLBIdDefined
+		return nil, ErrorSlbIdNotDefined
 	}
 	ls, err := describeListenerByListnerId(config.LbUrlPre, token, slbid, listenerId)
 	if err != nil {
@@ -115,7 +115,7 @@ func (l *Listener) DeleteListener(config *InCloud, service *corev1.Service) erro
 	}
 	slbid := getServiceAnnotation(service, common.ServiceAnnotationInternalSlbId, "")
 	if slbid == "" {
-		return ErrorNoSLBIdDefined
+		return ErrorSlbIdNotDefined
 	}
 	error = deleteListener(config.LbUrlPre, token, slbid, l.ListenerId)
 	if nil != error {

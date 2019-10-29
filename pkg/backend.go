@@ -160,7 +160,7 @@ func DeleteBackends(config *InCloud, service *v1.Service, listenerId string, bac
 	}
 	slbid := getServiceAnnotation(service, common.ServiceAnnotationInternalSlbId, "")
 	if slbid == "" {
-		return ErrorNoSLBIdDefined
+		return ErrorSlbIdNotDefined
 	}
 	error = removeBackendServers(config.LbUrlPre, token, slbid, listenerId, backendIdList)
 
@@ -174,7 +174,7 @@ func GetBackends(config *InCloud, service *v1.Service, listenerId string) ([]Bac
 	}
 	slbid := getServiceAnnotation(service, common.ServiceAnnotationInternalSlbId, "")
 	if slbid == "" {
-		return nil, ErrorNoSLBIdDefined
+		return nil, ErrorSlbIdNotDefined
 	}
 	backends, error := describeBackendservers(config.LbUrlPre, token, slbid, listenerId)
 	if nil != error {

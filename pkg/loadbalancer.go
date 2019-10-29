@@ -10,7 +10,7 @@ import (
 
 var (
 	ErrorNotFoundInCloud = fmt.Errorf("Cannot find lb in incloud")
-	ErrorNoSLBIdDefined  = fmt.Errorf("Could not find Service SLB Id ")
+	ErrorSlbIdNotDefined = fmt.Errorf("Could not find Service SLB Id ")
 )
 
 type LoadBalancer struct {
@@ -58,7 +58,7 @@ type NewLoadBalancerOption struct {
 func GetLoadBalancer(config *InCloud, service *v1.Service) (*LoadBalancer, error) {
 	slbid := getServiceAnnotation(service, common.ServiceAnnotationInternalSlbId, "")
 	if slbid == "" {
-		return nil, ErrorNoSLBIdDefined
+		return nil, ErrorSlbIdNotDefined
 	}
 	token, error := getKeyCloakToken(config.RequestedSubject, config.TokenClientID, config.ClientSecret, config.KeycloakUrl, config)
 	if error != nil {
