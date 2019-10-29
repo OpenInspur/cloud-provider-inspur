@@ -368,19 +368,19 @@ func getServiceNodes(service *v1.Service, nodes []*v1.Node) ([]*v1.Node, error) 
 	spec := service.Spec
 	if spec.Selector["app"] != "" {
 		sel := "app=" + spec.Selector["app"]
-		klog.Infof("spec.Selector:%s", sel)
 		auth := "Authorization: Bearer $(cat /var/run/secrets/kubernetes.io/serviceaccount/token)"
 		ns := service.Namespace
 		podsUrl := fmt.Sprintf("https://kubernetes.default.svc.cluster.local/api/v1/namespaces/%s/pods/?labelSelector=%s", ns, sel)
-		cmd1 := exec.Command("curl -k", "-H \"", auth, "\" -n", podsUrl)
+		cmd1 := exec.Command("curl -k", "-H", "\""+auth+"\"", "-n", podsUrl)
 		res1, _ := cmd1.CombinedOutput()
-		klog.Info("cmd1:%v", cmd1)
+		klog.Infof("cmd1:%v", cmd1)
 		var result v1.PodList
 		err := json.Unmarshal(res1, result)
 		if err != nil {
-			klog.Errorf("curl %s,error:%s,output:%v", podsUrl, err, res1)
+			klog.Errorf("curl %s,error:%s,output:%v", podsUrl, err, string(res1))
 			return nil, err
 		}
+		klog.Infof("v1.PodList:%v", result)
 		var retNodes = make([]*v1.Node, len(result.Items))
 		for _, item := range result.Items {
 			for _, node := range nodes {
