@@ -371,7 +371,7 @@ func getServiceNodes(service *v1.Service, nodes []*v1.Node) ([]*v1.Node, error) 
 		auth := "Authorization: Bearer $(cat /var/run/secrets/kubernetes.io/serviceaccount/token)"
 		ns := service.Namespace
 		podsUrl := fmt.Sprintf("https://kubernetes.default.svc.cluster.local/api/v1/namespaces/%s/pods/?labelSelector=%s", ns, sel)
-		cmd1 := exec.Command("curl -k", "-H", "\""+auth+"\"", "-n", podsUrl)
+		cmd1 := exec.Command("curl", "-k", "-H", "\""+auth+"\"", "-n", podsUrl)
 		klog.Infof("cmd1:%v", cmd1)
 		res1, erro := cmd1.CombinedOutput()
 		if erro != nil {
