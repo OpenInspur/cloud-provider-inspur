@@ -372,12 +372,16 @@ func getServiceNodes(service *v1.Service, nodes []*v1.Node) ([]*v1.Node, error) 
 		ns := service.Namespace
 		podsUrl := fmt.Sprintf("https://kubernetes.default.svc.cluster.local/api/v1/namespaces/%s/pods/?labelSelector=%s", ns, sel)
 		cmd1 := exec.Command("curl -k", "-H", "\""+auth+"\"", "-n", podsUrl)
-		res1, _ := cmd1.CombinedOutput()
 		klog.Infof("cmd1:%v", cmd1)
+		res1, erro := cmd1.CombinedOutput()
+		if erro != nil {
+			klog.Errorf("curl %s,error:%s,output:%v", podsUrl, erro, string(res1))
+			return nil, erro
+		}
 		var result v1.PodList
 		err := json.Unmarshal(res1, result)
 		if err != nil {
-			klog.Errorf("curl %s,error:%s,output:%v", podsUrl, err, string(res1))
+			klog.Errorf("json.Unmarshal error:%s,output:%v", err)
 			return nil, err
 		}
 		klog.Infof("v1.PodList:%v", result)
