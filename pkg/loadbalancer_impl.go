@@ -411,15 +411,17 @@ func getServiceNodes(service *v1.Service, nodes []*v1.Node) ([]*v1.Node, error) 
 			klog.Errorf("json.Unmarshal error:%s,output:%v", err, string(body))
 			return nil, err
 		}
-		klog.Infof("v1.PodList:%v", result)
+		klog.Infof("v1.PodList:%v,items:%v", result, result.Items)
 		var retNodes = make([]*v1.Node, len(result.Items))
 		for _, item := range result.Items {
 			for _, node := range nodes {
 				if node.Name == item.Spec.NodeName {
 					retNodes = append(retNodes, node)
+					break
 				}
 			}
 		}
+		klog.Infof("retNodes:%v", retNodes)
 		return retNodes, nil
 	}
 	return nil, fmt.Errorf("service:%s/%s dosen't have selector(app)", service.Namespace, service.Name)
