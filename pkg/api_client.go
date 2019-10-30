@@ -503,7 +503,7 @@ func removeBackendServers(url, token, slbId, listnerId string, backendIdList []s
 		klog.Errorf("Request error %v", err)
 		return err
 	}
-	req.Header.Set("Content-Type", "text/plain")
+	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", token)
 	req.Header.Set("Date", time.Now().UTC().Format(time.RFC1123))
 	res, err := client.Do(req)
