@@ -93,7 +93,7 @@ func (ic *InCloud) EnsureLoadBalancer(ctx context.Context, clusterName string, s
 	if len(svcNodes) == 0 {
 		return nil, fmt.Errorf("there are no available nodes for LoadBalancer service %s/%s", service.Namespace, service.Name)
 	}
-	klog.Infof("EnsureLoadBalancer(%v, %v, %v,%v)", clusterName, service.Namespace, service.Name, len(svcNodes))
+	klog.Infof("EnsureLoadBalancer(%v,%v,%v,%v,%v)", clusterName, service.Namespace, service.Name, len(nodes), len(svcNodes))
 	//verify scheme 负载均衡的网络模式，默认参数：internet-facing：公网（默认）internal：内网
 
 	forwardRule := getServiceAnnotation(service, common.ServiceAnnotationLBForwardRule, "RR")
@@ -411,17 +411,16 @@ func getServiceNodes(service *v1.Service, nodes []*v1.Node) ([]*v1.Node, error) 
 			klog.Errorf("json.Unmarshal error:%s,output:%v", err, string(body))
 			return nil, err
 		}
-		klog.Infof("v1.PodList:%v,items:%v", result, result.Items)
 		var retNodes = make([]*v1.Node, len(result.Items))
-		for _, item := range result.Items {
+		for index, item := range result.Items {
 			for _, node := range nodes {
 				if node.Name == item.Spec.NodeName {
-					retNodes = append(retNodes, node)
+					retNodes[index] = node
 					break
 				}
 			}
 		}
-		klog.Infof("retNodes:%v", retNodes)
+		klog.Infof("retNodes:%v,retNodes.count:%v", retNodes, len(retNodes))
 		return retNodes, nil
 	}
 	return nil, fmt.Errorf("service:%s/%s dosen't have selector(app)", service.Namespace, service.Name)
