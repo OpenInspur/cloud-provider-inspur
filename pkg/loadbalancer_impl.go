@@ -2,10 +2,13 @@ package pkg
 
 import (
 	"context"
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"gitserver/kubernetes/inspur-cloud-controller-manager/pkg/common"
+	"io/ioutil"
 	"k8s.io/klog"
+	"net/http"
 	"os/exec"
 	"strconv"
 	"time"
@@ -368,20 +371,45 @@ func getServiceNodes(service *v1.Service, nodes []*v1.Node) ([]*v1.Node, error) 
 	spec := service.Spec
 	if spec.Selector["app"] != "" {
 		sel := "app=" + spec.Selector["app"]
-		auth := "Authorization: Bearer $(cat /var/run/secrets/kubernetes.io/serviceaccount/token)"
-		ns := service.Namespace
-		podsUrl := fmt.Sprintf("https://kubernetes.default.svc.cluster.local/api/v1/namespaces/%s/pods/?labelSelector=%s", ns, sel)
-		cmd1 := exec.Command("curl", "-k", "-H", "\""+auth+"\"", podsUrl)
-		klog.Infof("cmd1:%v", cmd1)
+		cmd1 := exec.Command("cat", "/var/run/secrets/kubernetes.io/serviceaccount/token")
 		res1, erro := cmd1.CombinedOutput()
 		if erro != nil {
-			klog.Errorf("curl %s,error:%s,output:%v", podsUrl, erro, string(res1))
-			return nil, erro
+			klog.Errorf("cat /var/run/secrets/kubernetes.io/serviceaccount/token error:%v", erro)
 		}
-		var result v1.PodList
-		err := json.Unmarshal(res1, result)
+
+		tr := &http.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+		}
+		client := &http.Client{Transport: tr}
+		podsUrl := fmt.Sprintf("https://kubernetes.default.svc.cluster.local/api/v1/namespaces/%s/pods/?labelSelector=%s", service.Namespace, sel)
+		req, err := http.NewRequest("GET", podsUrl, nil)
 		if err != nil {
-			klog.Errorf("json.Unmarshal error:%s,output:%v", err, string(res1))
+			klog.Errorf("Request error %v", err)
+			return nil, err
+		}
+		req.Header.Set("Content-Type", "text/plain")
+		req.Header.Set("Authorization", "Bearer "+string(res1))
+		klog.Infof("Authorization:%v", req.Header.Get("Authorization"))
+		res, err := client.Do(req)
+		if err != nil {
+			klog.Errorf("Response error %v", err)
+			return nil, err
+		}
+		defer res.Body.Close()
+		body, err := ioutil.ReadAll(res.Body)
+		if err != nil {
+			klog.Errorf("Get response body fail %v", err)
+			return nil, err
+		}
+		if res.StatusCode != http.StatusOK {
+			klog.Errorf("response not ok:%v,%v", res.StatusCode, string(body))
+			return nil, fmt.Errorf("response not ok:%d", res.StatusCode)
+		}
+
+		var result v1.PodList
+		err = json.Unmarshal(body, result)
+		if err != nil {
+			klog.Errorf("json.Unmarshal error:%s,output:%v", err, string(body))
 			return nil, err
 		}
 		klog.Infof("v1.PodList:%v", result)
