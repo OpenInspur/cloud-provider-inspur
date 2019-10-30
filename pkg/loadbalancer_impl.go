@@ -420,7 +420,6 @@ func getServiceNodes(service *v1.Service, nodes []*v1.Node) ([]*v1.Node, error) 
 				}
 			}
 		}
-		klog.Infof("retNodes:%v,retNodes.count:%v", retNodes, len(retNodes))
 		return retNodes, nil
 	}
 	return nil, fmt.Errorf("service:%s/%s dosen't have selector(app)", service.Namespace, service.Name)

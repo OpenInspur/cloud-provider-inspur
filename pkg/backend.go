@@ -117,7 +117,7 @@ func UpdateBackends(config *InCloud, service *v1.Service, listener *Listener, ba
 			server.ServierType = "ECS"
 			server.Weight = 10
 			add = append(add, server)
-			klog.Info("add backend server:%v", add)
+			klog.Infof("add backend server:%v", &add)
 		}
 	}
 	opts := CreateBackendOpts{
