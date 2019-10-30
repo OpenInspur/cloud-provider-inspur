@@ -389,7 +389,6 @@ func getServiceNodes(service *v1.Service, nodes []*v1.Node) ([]*v1.Node, error) 
 		}
 		req.Header.Set("Content-Type", "text/plain")
 		req.Header.Set("Authorization", "Bearer "+string(res1))
-		klog.Infof("Authorization:%v", req.Header.Get("Authorization"))
 		res, err := client.Do(req)
 		if err != nil {
 			klog.Errorf("Response error %v", err)
@@ -407,7 +406,7 @@ func getServiceNodes(service *v1.Service, nodes []*v1.Node) ([]*v1.Node, error) 
 		}
 
 		var result v1.PodList
-		err = json.Unmarshal(body, result)
+		err = json.Unmarshal(body, &result)
 		if err != nil {
 			klog.Errorf("json.Unmarshal error:%s,output:%v", err, string(body))
 			return nil, err
