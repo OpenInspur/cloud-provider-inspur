@@ -91,7 +91,6 @@ func UpdateBackends(config *InCloud, listener *Listener, backends interface{}) e
 	add, del := []*BackendServer{}, []string{}
 	// checkout for newly added servers
 	for _, node := range nodes {
-		klog.Infof("node.UID:%s", string(node.UID))
 		found := false
 		for _, back := range backs {
 			if back.ServerId == getNodeAnnotation(node, common.NodeAnnotationInstanceID, "") {
