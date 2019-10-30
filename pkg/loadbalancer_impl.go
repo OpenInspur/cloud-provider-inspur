@@ -148,7 +148,7 @@ func (ic *InCloud) EnsureLoadBalancer(ctx context.Context, clusterName string, s
 		if err != nil {
 			return nil, fmt.Errorf("failed to get LB listener %v: %v", ls.SLBId, ls.ListenerId)
 		}
-		err = UpdateBackends(ic, service, ls, svcNodes)
+		err = UpdateBackends(ic, ls, svcNodes)
 		if err != nil {
 			return nil, err
 		}
@@ -190,7 +190,7 @@ func (ic *InCloud) UpdateLoadBalancer(ctx context.Context, clusterName string, s
 	if len(svcNodes) == 0 {
 		return fmt.Errorf("there are no available nodes for LoadBalancer service %s/%s", service.Namespace, service.Name)
 	}
-	klog.Infof("UpdateLoadBalancer(%v, %v, %v,%v)", clusterName, service.Namespace, service.Name, len(svcNodes))
+	klog.Infof("UpdateLoadBalancer(%v,%v,%v,%v,%v)", clusterName, service.Namespace, service.Name, len(nodes), len(svcNodes))
 
 	//修改负载均衡信息，目前只支持修改名称。
 
@@ -249,7 +249,7 @@ func (ic *InCloud) UpdateLoadBalancer(ctx context.Context, clusterName string, s
 		if err != nil {
 			return fmt.Errorf("failed to get LB listener %v: %v", ls.SLBId, ls.ListenerId)
 		}
-		UpdateBackends(ic, service, ls, svcNodes)
+		UpdateBackends(ic, ls, svcNodes)
 	}
 
 	if err != nil {
@@ -310,7 +310,7 @@ func (ic *InCloud) EnsureLoadBalancerDeleted(ctx context.Context, clusterName st
 		listener := GetListenerForPort(ls, port)
 		//port not assigned
 		if listener != nil {
-			backends, err := GetBackends(ic, service, listener.ListenerId)
+			backends, err := GetBackends(ic, lb.SlbId, listener.ListenerId)
 			if nil != err {
 				klog.Infof("getBackens fail ,error : ", err)
 				return err
@@ -320,7 +320,7 @@ func (ic *InCloud) EnsureLoadBalancerDeleted(ctx context.Context, clusterName st
 				for _, backend := range backends {
 					backStringList = append(backStringList, backend.ServerId)
 				}
-				DeleteBackends(ic, service, listener.ListenerId, backStringList)
+				DeleteBackends(ic, lb.SlbId, listener.ListenerId, backStringList)
 			}
 			error = listener.DeleteListener(ic, service)
 			if nil != error {
@@ -347,23 +347,19 @@ func getServiceAnnotation(service *v1.Service, annotationKey string, defaultSett
 	return defaultSetting
 }
 
-// The LB needs to be configured with instance addresses on the same
-// subnet as the LB (aka opts.SubnetID).  Currently we're just
-// guessing that the node's InternalIP is the right address - and that
-// should be sufficient for all "normal" cases.
-func nodeAddressForLB(node *v1.Node) (string, error) {
-	addrs := node.Status.Addresses
-	if len(addrs) == 0 {
-		return "", ErrorBackendNotFound
+//getServiceAnnotation searches a given v1.Service for a specific annotationKey and either returns the annotation's value or a specified defaultSetting
+func getNodeAnnotation(node *v1.Node, annotationKey string, defaultSetting string) string {
+	klog.Infof("getNodeAnnotation(%v,%v,%v,%v)", node.Name, node.Annotations, annotationKey, defaultSetting)
+	if annotationValue, ok := node.Annotations[annotationKey]; ok {
+		//if there is an annotation for this setting, set the "setting" var to it
+		// annotationValue can be empty, it is working as designed
+		// it makes possible for instance provisioning loadbalancer without floatingip
+		klog.Infof("Found a Node Annotation: %v = %v", annotationKey, annotationValue)
+		return annotationValue
 	}
-
-	for _, addr := range addrs {
-		if addr.Type == v1.NodeInternalIP {
-			return addr.Address, nil
-		}
-	}
-
-	return addrs[0].Address, nil
+	//if there is no annotation, set "settings" var to the value from cloud config
+	klog.Infof("Could not find a Node Annotation:%s; falling back on default setting:%v", annotationKey, defaultSetting)
+	return defaultSetting
 }
 
 // 返回service聚合的pods所在的nodes

@@ -495,7 +495,7 @@ func removeBackendServers(url, token, slbId, listnerId string, backendIdList []s
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 	}
 	client := &http.Client{Transport: tr}
-	reqUrl := url + "/" + slbId + "/listeners/" + listnerId + "/members" + "?backendIdList=" + strings.Join(backendIdList, ",")
+	reqUrl := url + "/" + slbId + "/listeners/" + listnerId + "/members" + "?backendIdList=[" + strings.Join(backendIdList, ",") + "]"
 	klog.Infof("removeBackendServers requestUrl:%v, token:%v", reqUrl, token)
 	req, err := http.NewRequest("DELETE", reqUrl, nil)
 	if err != nil {

@@ -72,7 +72,7 @@ func CreateBackends(config *InCloud, opts CreateBackendOpts) (*BackendList, erro
 	return createBackend(config.LbUrlPre, token, opts)
 }
 
-func UpdateBackends(config *InCloud, service *v1.Service, listener *Listener, backends interface{}) error {
+func UpdateBackends(config *InCloud, listener *Listener, backends interface{}) error {
 	//先查询listenner关联的backends
 	token, error := getKeyCloakToken(config.RequestedSubject, config.TokenClientID, config.ClientSecret, config.KeycloakUrl, config)
 	if error != nil {
@@ -91,9 +91,10 @@ func UpdateBackends(config *InCloud, service *v1.Service, listener *Listener, ba
 	add, del := []*BackendServer{}, []string{}
 	// checkout for newly added servers
 	for _, node := range nodes {
+		klog.Infof("node.UID:%s", string(node.UID))
 		found := false
 		for _, back := range backs {
-			if back.ServerId == string(node.UID) {
+			if back.ServerId == getNodeAnnotation(node, common.NodeAnnotationInstanceID, "") {
 				found = true
 				break
 			}
@@ -120,31 +121,33 @@ func UpdateBackends(config *InCloud, service *v1.Service, listener *Listener, ba
 			klog.Infof("add backend server:%v", &add)
 		}
 	}
-	opts := CreateBackendOpts{
-		SLBId:      listener.SLBId,
-		ListenerId: listener.ListenerId,
-		Servers:    add,
-	}
-	_, err := CreateBackends(config, opts)
-	if nil != err {
-		klog.Infof("CreateBackends failed: ", err)
-		return err
+	if len(add) > 0 {
+		opts := CreateBackendOpts{
+			SLBId:      listener.SLBId,
+			ListenerId: listener.ListenerId,
+			Servers:    add,
+		}
+		_, err := CreateBackends(config, opts)
+		if nil != err {
+			klog.Infof("CreateBackends failed: ", err)
+			return err
+		}
 	}
 	// check for removed backend servers
 	for _, back := range backs {
 		found := false
 		for _, node := range nodes {
-			if back.ServerId == string(node.UID) {
+			if back.ServerId == getNodeAnnotation(node, common.NodeAnnotationInstanceID, "") {
 				found = true
 				break
 			}
 		}
 		if !found {
-			del = append(del, back.ServerId)
+			del = append(del, back.BackendId)
 		}
 	}
 	if len(del) > 0 {
-		DeleteBackends(config, service, listener.ListenerId, del)
+		err := DeleteBackends(config, listener.SLBId, listener.ListenerId, del)
 		if nil != err {
 			klog.Infof("DeleteBackends failed: ", err)
 			return err
@@ -153,28 +156,20 @@ func UpdateBackends(config *InCloud, service *v1.Service, listener *Listener, ba
 	return nil
 }
 
-func DeleteBackends(config *InCloud, service *v1.Service, listenerId string, backendIdList []string) error {
+func DeleteBackends(config *InCloud, slbid, listenerId string, backendIdList []string) error {
 	token, error := getKeyCloakToken(config.RequestedSubject, config.TokenClientID, config.ClientSecret, config.KeycloakUrl, config)
 	if error != nil {
 		return error
-	}
-	slbid := getServiceAnnotation(service, common.ServiceAnnotationInternalSlbId, "")
-	if slbid == "" {
-		return ErrorSlbIdNotDefined
 	}
 	error = removeBackendServers(config.LbUrlPre, token, slbid, listenerId, backendIdList)
 
 	return error
 }
 
-func GetBackends(config *InCloud, service *v1.Service, listenerId string) ([]Backend, error) {
+func GetBackends(config *InCloud, slbid, listenerId string) ([]Backend, error) {
 	token, error := getKeyCloakToken(config.RequestedSubject, config.TokenClientID, config.ClientSecret, config.KeycloakUrl, config)
 	if error != nil {
 		return nil, error
-	}
-	slbid := getServiceAnnotation(service, common.ServiceAnnotationInternalSlbId, "")
-	if slbid == "" {
-		return nil, ErrorSlbIdNotDefined
 	}
 	backends, error := describeBackendservers(config.LbUrlPre, token, slbid, listenerId)
 	if nil != error {
@@ -184,29 +179,23 @@ func GetBackends(config *InCloud, service *v1.Service, listenerId string) ([]Bac
 	return backends, nil
 }
 
-func NewBackendList(lb *LoadBalancer, listener *Listener) *BackendList {
-	//list := make([]*Backend, 0)
-	//instanceIDs := lb.GetNodesInstanceIDs()
-	//exec := lb.lbExec.(executor.QingCloudListenerBackendExecutor)
-	//for _, instance := range instanceIDs {
-	//	b := &Backend{
-	//		backendExec: exec,
-	//		Name:        fmt.Sprintf("backend_%s_%s", listener.Name, instance),
-	//		Spec: BackendSpec{
-	//			Listener:   listener,
-	//			Weight:     1,
-	//			Port:       listener.NodePort,
-	//			InstanceID: instance,
-	//		},
-	//	}
-	//	list = append(list, b)
-	//}
-	//return &BackendList{
-	//	backendExec: exec,
-	//	Listener:    listener,
-	//	Items:       list,
-	//}
-	return nil
+// The LB needs to be configured with instance addresses on the same
+// subnet as the LB (aka opts.SubnetID).  Currently we're just
+// guessing that the node's InternalIP is the right address - and that
+// should be sufficient for all "normal" cases.
+func nodeAddressForLB(node *v1.Node) (string, error) {
+	addrs := node.Status.Addresses
+	if len(addrs) == 0 {
+		return "", ErrorBackendNotFound
+	}
+
+	for _, addr := range addrs {
+		if addr.Type == v1.NodeInternalIP {
+			return addr.Address, nil
+		}
+	}
+
+	return addrs[0].Address, nil
 }
 
 //func (b *Backend) Create() error {
