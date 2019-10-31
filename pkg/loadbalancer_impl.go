@@ -312,13 +312,13 @@ func (ic *InCloud) EnsureLoadBalancerDeleted(ctx context.Context, clusterName st
 		if listener != nil {
 			backends, err := GetBackends(ic, lb.SlbId, listener.ListenerId)
 			if nil != err {
-				klog.Infof("getBackens fail ,error : ", err)
+				klog.Errorf("getBackens fail ,error : ", err)
 				return err
 			}
 			if nil != backends {
 				var backStringList []string
 				for _, backend := range backends {
-					backStringList = append(backStringList, backend.ServerId)
+					backStringList = append(backStringList, backend.BackendId)
 				}
 				DeleteBackends(ic, lb.SlbId, listener.ListenerId, backStringList)
 			}

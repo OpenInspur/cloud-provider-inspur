@@ -14,7 +14,7 @@ var ErrorBackendNotFound = fmt.Errorf("Cannot find backend")
 type Backend struct {
 	BackendId   string `json:"backendId"`
 	ListenerId  string `json:"listenerId"`
-	ServerId    string `json:"ServerId"`
+	ServerId    string `json:"serverId"`
 	Port        int    `json:"port"`
 	ServerName  string `json:"serverName"`
 	ServerIp    string `json:"serverIp"`
