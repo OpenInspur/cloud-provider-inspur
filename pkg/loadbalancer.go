@@ -75,12 +75,16 @@ func GetLoadBalancer(config *InCloud, service *v1.Service) (*LoadBalancer, error
 	return lb, nil
 }
 
-func ModifyLoadBalancer(config *InCloud, slbName string) (*SlbResponse, error) {
+func ModifyLoadBalancer(config *InCloud, service *v1.Service, slbName string) (*SlbResponse, error) {
+	slbid := getServiceAnnotation(service, common.ServiceAnnotationInternalSlbId, "")
+	if slbid == "" {
+		return nil, ErrorSlbIdNotDefined
+	}
 	token, error := getKeyCloakToken(config.RequestedSubject, config.TokenClientID, config.ClientSecret, config.KeycloakUrl, config)
 	if error != nil {
 		return nil, error
 	}
-	slbResponse, err := modifyLoadBalancer(config.LbUrlPre, token, config.LbId, slbName)
+	slbResponse, err := modifyLoadBalancer(config.LbUrlPre, token, slbid, slbName)
 	if err != nil {
 		return nil, err
 	}
@@ -90,12 +94,16 @@ func ModifyLoadBalancer(config *InCloud, slbName string) (*SlbResponse, error) {
 	return slbResponse, nil
 }
 
-func DeleteLoadBalancer(config *InCloud) error {
+func DeleteLoadBalancer(config *InCloud, service *v1.Service) error {
+	slbid := getServiceAnnotation(service, common.ServiceAnnotationInternalSlbId, "")
+	if slbid == "" {
+		return ErrorSlbIdNotDefined
+	}
 	token, error := getKeyCloakToken(config.RequestedSubject, config.TokenClientID, config.ClientSecret, config.KeycloakUrl, config)
 	if error != nil {
 		return error
 	}
-	error = deleteLoadBalancer(config.LbUrlPre, token, config.LbId)
+	error = deleteLoadBalancer(config.LbUrlPre, token, slbid)
 	return error
 }
 

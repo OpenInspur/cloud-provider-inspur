@@ -5,55 +5,31 @@
 package pkg
 
 import (
+	"bufio"
 	"encoding/json"
 	"fmt"
-	"gopkg.in/gcfg.v1"
 	"io"
 	"k8s.io/client-go/informers"
 	corev1informer "k8s.io/client-go/informers/core/v1"
 	"k8s.io/cloud-provider"
 	"k8s.io/klog"
+	"os"
+	"strings"
 )
 
 const (
-	ProviderName = "incloud"
+	ProviderName           = "incloud"
+	DefaultCloudConfigPath = "/etc/kubernetes/cloud-config"
 )
 
 type Config struct {
-	Global struct {
-		AuthURL    string `gcfg:"auth-url"`
-		Username   string
-		UserID     string `gcfg:"user-id"`
-		Password   string
-		TenantID   string `gcfg:"tenant-id"`
-		TenantName string `gcfg:"tenant-name"`
-		TrustID    string `gcfg:"trust-id"`
-		DomainID   string `gcfg:"domain-id"`
-		DomainName string `gcfg:"domain-name"`
-
-		ClientId    string `gcfg:"client-id"`
-		KeycloakUrl string `gcfg:"KeycloakUrl"`
-		ProjectName string `gcfg:"projectName"`
-		InstanceID  string `gcfg:"instanceID"`
-		Port        string `gcfg:"port"`
-
-		Region string
-		CAFile string `gcfg:"ca-file"`
-
-		EbsOpenApiUrl    string `gcfg:"ebs-openapi-url"`
-		EbsServiceUrl    string `gcfg:"ebs-service-url"`
-		ClientSecret     string `gcfg:"client-secret"`
-		RequestedSubject string `gcfg:"requested-subject"`
-		TokenClientID    string `gcfg:"token-client-id"`
-
-		MasterAuthURL  string `gcfg:"master-auth-url"`
-		OpenApiVersion string `gcfg:"openapi-version"`
-		SubnetID       string `gcfg:"subnet-id"`  //由于loadbalancer本身不在cloud controller manager创建，不需要
-		SlbUrlPre      string `gcfg:"slbUrl-pre"` //cloud-config中配置slb url前缀；
-		SlbId          string `gcfg:"slbId"`      //创建集群时注入进来
-		KeycloakToken  string `gcfg:"kktoken"`
-	}
-	//LoadBalancerOpts LoadBalancerOpts
+	KeycloakUrl      string `gcfg:"keycloakUrl"`
+	ClientSecret     string `gcfg:"client-secret"`
+	RequestedSubject string `gcfg:"requested-subject"`
+	TokenClientID    string `gcfg:"token-client-id"`
+	SubnetID         string `gcfg:"subnet-id"`  //由于loadbalancer本身不在cloud controller manager创建，不需要
+	SlbUrlPre        string `gcfg:"slbUrl-pre"` //cloud-config中配置slb url前缀；
+	KeycloakToken    string `gcfg:"kktoken"`
 }
 
 var _ cloudprovider.Interface = &InCloud{}
@@ -67,7 +43,6 @@ type InCloud struct {
 	serviceInformer corev1informer.ServiceInformer
 
 	LbUrlPre         string
-	LbId             string
 	KeycloakToken    string
 	RequestedSubject string
 	TokenClientID    string
@@ -91,21 +66,59 @@ func readConfig(config io.Reader) (Config, error) {
 		return Config{}, err
 	}
 
-	var cfg Config
-	err := gcfg.ReadInto(&cfg, config)
-	return cfg, err
+	return LoadCloudCfg()
+}
+
+func LoadCloudCfg() (Config, error) {
+	fi, err := os.Open(DefaultCloudConfigPath)
+	if err != nil {
+		return Config{}, fmt.Errorf("load cloud config file: %v", err)
+	}
+	defer fi.Close()
+
+	var slbUrlPre, requestedSubject, tokenClientID, clientSecret, keycloakUrl, keycloakToken string
+	br := bufio.NewReader(fi)
+	for {
+		a, _, c := br.ReadLine()
+		if c == io.EOF {
+			break
+		}
+		arg := string(a)
+		if arg != "" && arg[0:1] != "#" && strings.Index(arg, "=") > 0 {
+			key := arg[0:strings.Index(arg, "=")]
+			value := arg[strings.Index(arg, "=")+1 : len(arg)]
+			switch key {
+			case "slbUrl-pre":
+				slbUrlPre = value
+			case "client-secret":
+				clientSecret = value
+			case "requested-subject":
+				requestedSubject = value
+			case "token-client-id":
+				tokenClientID = value
+			case "keycloakUrl":
+				keycloakUrl = value
+			case "kktoken":
+				keycloakToken = value
+			default:
+			}
+		}
+	}
+	config := Config{keycloakUrl, clientSecret, requestedSubject,
+		tokenClientID, "", slbUrlPre, keycloakToken}
+	klog.Info(config)
+	return config, nil
 }
 
 // newInCloud returns a new instance of InCloud cloud provider.
 func newInCloud(config Config) (cloudprovider.Interface, error) {
 	qc := InCloud{
-		LbUrlPre:         config.Global.SlbUrlPre,
-		KeycloakToken:    config.Global.KeycloakToken,
-		LbId:             config.Global.SlbId,
-		RequestedSubject: config.Global.RequestedSubject,
-		TokenClientID:    config.Global.TokenClientID,
-		ClientSecret:     config.Global.ClientSecret,
-		KeycloakUrl:      config.Global.KeycloakUrl,
+		LbUrlPre:         config.SlbUrlPre,
+		KeycloakToken:    config.KeycloakToken,
+		RequestedSubject: config.RequestedSubject,
+		TokenClientID:    config.TokenClientID,
+		ClientSecret:     config.ClientSecret,
+		KeycloakUrl:      config.KeycloakUrl,
 	}
 
 	klog.Infof("InCloud provider init done")
