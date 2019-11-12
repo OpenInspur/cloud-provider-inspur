@@ -38,7 +38,6 @@ spec:
             - mountPath: /etc/kubernetes/node-kubeconfig.yaml
               name: kubeconfig
               readOnly: true
-      hostNetwork: true
       serviceAccountName: cloud-controller-manager
       tolerations:
         # this taint is set by all kubelets running `--cloud-provider=external`
@@ -49,7 +48,9 @@ spec:
         - key: "CriticalAddonsOnly"
           operator: "Exists"
         # cloud controller manages should be able to run on masters
-        - key: "node-role.kubernetes.io/master"
+        - key: pro
+          operator: Equal
+          value: master
           effect: NoSchedule
       volumes:
       - hostPath:
