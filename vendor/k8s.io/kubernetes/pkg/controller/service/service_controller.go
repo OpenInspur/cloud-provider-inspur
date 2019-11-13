@@ -22,10 +22,9 @@ import (
 	"sync"
 	"time"
 
-	"reflect"
-
 	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -38,12 +37,13 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/workqueue"
-	cloudprovider "k8s.io/cloud-provider"
+	"k8s.io/cloud-provider"
 	"k8s.io/klog"
 	v1helper "k8s.io/kubernetes/pkg/apis/core/v1/helper"
 	"k8s.io/kubernetes/pkg/controller"
 	kubefeatures "k8s.io/kubernetes/pkg/features"
 	"k8s.io/kubernetes/pkg/util/metrics"
+	"reflect"
 )
 
 const (
@@ -97,7 +97,8 @@ type ServiceController struct {
 	nodeLister          corelisters.NodeLister
 	nodeListerSynced    cache.InformerSynced
 	// services that need to be synced
-	queue workqueue.RateLimitingInterface
+	queue     workqueue.RateLimitingInterface
+	endpoints map[string][]string
 }
 
 // New returns a new service controller to keep cloud provider service resources
@@ -131,6 +132,7 @@ func New(
 		nodeLister:       nodeInformer.Lister(),
 		nodeListerSynced: nodeInformer.Informer().HasSynced,
 		queue:            workqueue.NewNamedRateLimitingQueue(workqueue.NewItemExponentialFailureRateLimiter(minRetryDelay, maxRetryDelay), "service"),
+		endpoints:        make(map[string][]string),
 	}
 
 	serviceInformer.Informer().AddEventHandlerWithResyncPeriod(
@@ -495,7 +497,13 @@ func (s *ServiceController) needsUpdate(oldService *v1.Service, newService *v1.S
 			oldService.Spec.HealthCheckNodePort, newService.Spec.HealthCheckNodePort)
 		return true
 	}
-
+	// Check if endpoints have changed
+	oldEndpoints := s.endpoints[oldService.ObjectMeta.Name]
+	newEndpoints := s.getEndpoints(oldService)
+	if !reflect.DeepEqual(oldEndpoints, newEndpoints) {
+		s.endpoints[oldService.ObjectMeta.Name] = newEndpoints
+		return true
+	}
 	return false
 }
 
@@ -732,6 +740,7 @@ func (s *ServiceController) syncService(key string) error {
 		klog.Infof("Unable to retrieve service %v from store: %v", key, err)
 	default:
 		cachedService = s.cache.getOrCreate(key)
+		s.endpoints[service.ObjectMeta.Name] = s.getEndpoints(service)
 		err = s.processServiceUpdate(cachedService, service, key)
 	}
 
@@ -766,4 +775,23 @@ func (s *ServiceController) processLoadBalancerDelete(cachedService *cachedServi
 	s.cache.delete(key)
 
 	return nil
+}
+
+// This functions gets the number of endpoints for a given service name
+func (s *ServiceController) getEndpoints(service *v1.Service) []string {
+	var podIps []string
+	endpoints, err := s.kubeClient.CoreV1().Endpoints(service.Namespace).Get(service.Name, metav1.GetOptions{})
+	if err == nil {
+		subsets := endpoints.Subsets
+		if len(subsets) > 0 {
+			subset := subsets[0]
+			addresses := subset.Addresses
+			for _, address := range addresses {
+				ip := address.IP
+				podIps = append(podIps, ip)
+			}
+			return podIps
+		}
+	}
+	return podIps
 }
