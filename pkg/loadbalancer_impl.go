@@ -7,14 +7,12 @@ import (
 	"fmt"
 	"gitserver/kubernetes/inspur-cloud-controller-manager/pkg/common"
 	"io/ioutil"
+	"k8s.io/api/core/v1"
+	"k8s.io/cloud-provider"
 	"k8s.io/klog"
 	"net/http"
 	"os/exec"
 	"strconv"
-	"time"
-
-	"k8s.io/api/core/v1"
-	"k8s.io/cloud-provider"
 )
 
 // LoadBalancer returns an implementation of LoadBalancer for InCloud.
@@ -68,12 +66,6 @@ func (ic *InCloud) GetLoadBalancerName(_ context.Context, clusterName string, se
 // 这里不创建LoadBalancer，查询LoadBalancer，有则创建Listener以及backend，无则报错
 // 改进点：根据service查询后端pod所在节点，只注册pod所在节点到loadbalancer上，当pod漂移时，需要刷新loadbalancer的member；当pod个数变更时，需要刷新loadbalancer的member
 func (ic *InCloud) EnsureLoadBalancer(ctx context.Context, clusterName string, service *v1.Service, nodes []*v1.Node) (*v1.LoadBalancerStatus, error) {
-	startTime := time.Now()
-	defer func() {
-		elapsed := time.Since(startTime)
-		klog.Infof("EnsureLoadBalancer takes total %d seconds", elapsed/time.Second)
-	}()
-
 	lb, err := GetLoadBalancer(ic, service)
 	if err != nil {
 		if err == ErrorSlbIdNotDefined {
@@ -177,12 +169,6 @@ func (ic *InCloud) UpdateLoadBalancer(ctx context.Context, clusterName string, s
 		return err
 	}
 
-	startTime := time.Now()
-	defer func() {
-		elapsed := time.Since(startTime)
-		klog.Infof("UpdateLoadBalancer takes total %d seconds", elapsed/time.Second)
-	}()
-
 	svcNodes, erro := getServiceNodes(service, nodes)
 	if erro != nil {
 		return erro
@@ -272,12 +258,6 @@ func (ic *InCloud) UpdateLoadBalancer(ctx context.Context, clusterName string, s
 // Implementations must treat the *v1.Service parameter as read-only and not modify it.
 // Parameter 'clusterName' is the name of the cluster as presented to kube-controller-manager
 func (ic *InCloud) EnsureLoadBalancerDeleted(ctx context.Context, clusterName string, service *v1.Service) error {
-	startTime := time.Now()
-	defer func() {
-		elapsed := time.Since(startTime)
-		klog.Infof("EnsureLoadBalancerDeleted takes total %d seconds", elapsed/time.Second)
-	}()
-
 	klog.Infof("EnsureLoadBalancerDeleted(%v, %v, %v, %v, %v)", clusterName, service.Namespace, service.Name,
 		service.Spec.LoadBalancerIP, service.Spec.Ports)
 

@@ -9,6 +9,7 @@ import (
 	"io/ioutil"
 	"k8s.io/klog"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -46,7 +47,6 @@ func getKeyCloakToken(requestedSubject, tokenClientId, clientSecret, keycloakUrl
 		if err2 == nil {
 			var token keycloakToken
 			if err3 := json.Unmarshal(body, &token); err3 == nil {
-				klog.Info("token is " + token.AccessToken)
 				return "Bearer " + token.AccessToken, nil
 			} else {
 				klog.Errorf("error to Unmarshal(body, &token): %v", err3)
@@ -490,15 +490,17 @@ func describeBackendservers(url, token, slbId, listnerId string) ([]Backend, err
 
 }
 
-func removeBackendServers(url, token, slbId, listnerId string, backendIdList []string) error {
+func removeBackendServers(slburl, token, slbId, listnerId string, backendIdList []string) error {
 	tr := &http.Transport{
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 	}
 	client := &http.Client{Transport: tr}
 	bks := strings.Join(backendIdList, "\",\"")
-	reqUrl := url + "/" + slbId + "/listeners/" + listnerId + "/members" + "?backendIdList=[\"" + bks + "\"]"
+	reqUrl, _ := url.Parse(slburl + "/" + slbId + "/listeners/" + listnerId + "/members" + "?backendIdList=[\"" + bks + "\"]")
+	q := reqUrl.Query()
+	reqUrl.RawQuery = q.Encode()
 	klog.Infof("removeBackendServers requestUrl:%v, token:%v", reqUrl, token)
-	req, err := http.NewRequest("DELETE", reqUrl, nil)
+	req, err := http.NewRequest("DELETE", reqUrl.String(), nil)
 	if err != nil {
 		klog.Errorf("Request error %v", err)
 		return err
