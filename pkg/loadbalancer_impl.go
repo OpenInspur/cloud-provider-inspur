@@ -136,11 +136,11 @@ func (ic *InCloud) EnsureLoadBalancer(ctx context.Context, clusterName string, s
 			}
 
 		}
-		ls, err := GetListener(ic, service, listener.ListenerId)
+		cls, err := GetListener(ic, service, listener.ListenerId)
 		if err != nil {
-			return nil, fmt.Errorf("failed to get LB listener %v: %v", ls.SLBId, ls.ListenerId)
+			return nil, fmt.Errorf("failed to get LB listener: %v", listener.ListenerId)
 		}
-		err = UpdateBackends(ic, ls, svcNodes)
+		err = UpdateBackends(ic, cls, svcNodes)
 		if err != nil {
 			return nil, err
 		}
@@ -231,21 +231,17 @@ func (ic *InCloud) UpdateLoadBalancer(ctx context.Context, clusterName string, s
 			}
 
 		}
-		ls, err := GetListener(ic, service, listener.ListenerId)
+		cls, err := GetListener(ic, service, listener.ListenerId)
 		if err != nil {
-			return fmt.Errorf("failed to get LB listener %v: %v", ls.SLBId, ls.ListenerId)
+			return fmt.Errorf("failed to get LB listener: %v", listener.ListenerId)
 		}
-		UpdateBackends(ic, ls, svcNodes)
+		UpdateBackends(ic, cls, svcNodes)
 	}
 
 	if err != nil {
 		return err
 	}
-	//status := &v1.LoadBalancerStatus{}
-	//status.Ingress = []v1.LoadBalancerIngress{{IP: slbResponse.BusinessIp}}
-	//if slbResponse.EipAddress != "" {
-	//	status.Ingress = append(status.Ingress, v1.LoadBalancerIngress{IP: slbResponse.EipAddress})
-	//}
+
 	return nil
 }
 
