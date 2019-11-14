@@ -391,7 +391,6 @@ func getServiceNodes(service *v1.Service, nodes []*v1.Node) ([]*v1.Node, error) 
 					break
 				}
 			}
-			klog.Infof("retNodes[index:%v]:%v", index, retNodes[index].Name)
 		}
 		return retNodes, nil
 	}

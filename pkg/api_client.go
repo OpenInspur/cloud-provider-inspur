@@ -497,8 +497,7 @@ func removeBackendServers(slburl, token, slbId, listnerId string, backendIdList 
 	client := &http.Client{Transport: tr}
 	bks := strings.Join(backendIdList, "\",\"")
 	reqUrl, _ := url.Parse(slburl + "/" + slbId + "/listeners/" + listnerId + "/members" + "?backendIdList=[\"" + bks + "\"]")
-	q := reqUrl.Query()
-	reqUrl.RawQuery = q.Encode()
+	reqUrl.RawQuery = reqUrl.Query().Encode()
 	klog.Infof("removeBackendServers requestUrl:%v, token:%v", reqUrl, token)
 	req, err := http.NewRequest("DELETE", reqUrl.String(), nil)
 	if err != nil {
