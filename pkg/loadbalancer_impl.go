@@ -386,12 +386,10 @@ func getServiceNodes(service *v1.Service, nodes []*v1.Node) ([]*v1.Node, error) 
 		//正常情况下，nodes数量大于等于result.Items
 		//异常情况下，如node notready，接口传进来的nodes只有正常的nodes如slave2，少于result.Items的nodes数量
 		var retNodes = []*v1.Node{}
-		count := 0
 		for _, item := range result.Items {
 			for _, node := range nodes {
 				if node.Name == item.Spec.NodeName {
-					count++
-					retNodes[count] = node
+					retNodes = append(retNodes, node)
 					break
 				}
 			}
