@@ -84,7 +84,6 @@ func UpdateBackends(config *InCloud, listener *Listener, backends interface{}) e
 		return error
 	}
 	nodes, ok := backends.([]*v1.Node)
-	klog.Infof("nodes:%v", nodes)
 	if !ok {
 		klog.Errorf("skip default backends update for type %s", reflect.TypeOf(backends))
 		return nil

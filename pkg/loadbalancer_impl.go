@@ -383,15 +383,20 @@ func getServiceNodes(service *v1.Service, nodes []*v1.Node) ([]*v1.Node, error) 
 			klog.Errorf("json.Unmarshal error:%s,output:%v", err, string(body))
 			return nil, err
 		}
-		var retNodes = make([]*v1.Node, len(result.Items))
-		for index, item := range result.Items {
+		//正常情况下，nodes数量大于等于result.Items
+		//异常情况下，如node notready，接口传进来的nodes只有正常的nodes如slave2，少于result.Items的nodes数量
+		var retNodes = []*v1.Node{}
+		count := 0
+		for _, item := range result.Items {
 			for _, node := range nodes {
 				if node.Name == item.Spec.NodeName {
-					retNodes[index] = node
+					count++
+					retNodes[count] = node
 					break
 				}
 			}
 		}
+		klog.Infof("retNodes:%v", retNodes)
 		return retNodes, nil
 	}
 	return nil, fmt.Errorf("service:%s/%s dosen't have selector(app)", service.Namespace, service.Name)
