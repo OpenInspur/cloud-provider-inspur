@@ -31,12 +31,19 @@ type Listener struct {
 
 //创建结构体,和Listener不一样
 type CreateListenerOpts struct {
-	SLBId         string   `json:"slbId"`
-	ListenerName  string   `json:"listenerName"`
-	Protocol      Protocol `json:"protocol"`
-	Port          int32    `json:"port"`
-	ForwardRule   string   `json:"forwardRule"`
-	IsHealthCheck string   `json:"isHealthCheck"`
+	SLBId              string   `json:"slbId"`
+	ListenerName       string   `json:"listenerName"`
+	Protocol           Protocol `json:"protocol"`
+	Port               int32    `json:"port"`
+	ForwardRule        string   `json:"forwardRule"`
+	IsHealthCheck      string   `json:"isHealthCheck"`
+	TypeHealthCheck    string   `json:"typeHealthCheck"`
+	PortHealthCheck    int      `json:"portHealthCheck""`
+	PeriodHealthCheck  int      `json:"periodHealthCheck"`
+	TimeoutHealthCheck int      `json:"timeoutHealthCheck"`
+	MaxHealthCheck     int      `json:"maxHealthCheck"`
+	DomainHealthCheck  string   `json:"domainHealthCheck"`
+	PathHealthCheck    string   `json:"pathHealthCheck"`
 }
 
 // GetListeners use should mannually load listener because sometimes we do not need load entire topology. For example, deletion

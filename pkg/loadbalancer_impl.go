@@ -95,6 +95,13 @@ func (ic *InCloud) EnsureLoadBalancer(ctx context.Context, clusterName string, s
 	if hc {
 		hcs = "1"
 	}
+	ty := getServiceAnnotation(service, common.ServiceAnnotationLBtypeHealthCheck, "tcp")
+	hpo, _ := strconv.Atoi(getServiceAnnotation(service, common.ServiceAnnotationLBportHealthCheck, "0"))
+	pr, _ := strconv.Atoi(getServiceAnnotation(service, common.ServiceAnnotationLBperiodHealthCheck, "30"))
+	ti, _ := strconv.Atoi(getServiceAnnotation(service, common.ServiceAnnotationLBtimeoutHealthCheck, "1"))
+	ma, _ := strconv.Atoi(getServiceAnnotation(service, common.ServiceAnnotationLBmaxHealthCheck, "0"))
+	do := getServiceAnnotation(service, common.ServiceAnnotationLBdomainHealthCheck, "")
+	pa := getServiceAnnotation(service, common.ServiceAnnotationLBpathHealthCheck, "")
 	//verify ports
 	ports := service.Spec.Ports
 	if len(ports) == 0 {
@@ -110,12 +117,19 @@ func (ic *InCloud) EnsureLoadBalancer(ctx context.Context, clusterName string, s
 		if listener == nil {
 			klog.Infof("Creating listener for port %d", po)
 			listener, err = CreateListener(ic, CreateListenerOpts{
-				SLBId:         lb.SlbId,
-				ListenerName:  fmt.Sprintf("listener_%d_%d", int(po), portIndex),
-				Protocol:      Protocol(port.Protocol),
-				Port:          po,
-				ForwardRule:   forwardRule,
-				IsHealthCheck: hcs,
+				SLBId:              lb.SlbId,
+				ListenerName:       fmt.Sprintf("listener_%d_%d", int(po), portIndex),
+				Protocol:           Protocol(port.Protocol),
+				Port:               po,
+				ForwardRule:        forwardRule,
+				IsHealthCheck:      hcs,
+				TypeHealthCheck:    ty,
+				PortHealthCheck:    hpo,
+				PeriodHealthCheck:  pr,
+				TimeoutHealthCheck: ti,
+				MaxHealthCheck:     ma,
+				DomainHealthCheck:  do,
+				PathHealthCheck:    pa,
 			})
 			if err != nil {
 				// Unknown error, retry later
@@ -124,12 +138,19 @@ func (ic *InCloud) EnsureLoadBalancer(ctx context.Context, clusterName string, s
 		} else {
 			klog.Infof("Updating listener for port %d", po)
 			_, erro := UpdateListener(ic, listener.ListenerId, CreateListenerOpts{
-				SLBId:         lb.SlbId,
-				ListenerName:  fmt.Sprintf("listener_%d_%d", int(po), portIndex),
-				Protocol:      Protocol(port.Protocol),
-				Port:          po,
-				ForwardRule:   forwardRule,
-				IsHealthCheck: hcs,
+				SLBId:              lb.SlbId,
+				ListenerName:       fmt.Sprintf("listener_%d_%d", int(po), portIndex),
+				Protocol:           Protocol(port.Protocol),
+				Port:               po,
+				ForwardRule:        forwardRule,
+				IsHealthCheck:      hcs,
+				TypeHealthCheck:    ty,
+				PortHealthCheck:    hpo,
+				PeriodHealthCheck:  pr,
+				TimeoutHealthCheck: ti,
+				MaxHealthCheck:     ma,
+				DomainHealthCheck:  do,
+				PathHealthCheck:    pa,
 			})
 			if erro != nil {
 				return nil, fmt.Errorf("Error updating LB listener: %v", err)
