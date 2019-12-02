@@ -24,7 +24,14 @@ metadata:
   annotations:
     service.beta.kubernetes.io/inspur-load-balancer-slbid:
     loadbalancer.inspur.com/forward-rule: "RR"
-    loadbalancer.inspur.com/is-healthcheck: "0"
+    loadbalancer.inspur.com/is-healthcheck: "1"
+    loadbalancer.inspur.com/healthcheck-type: "tcp"
+    loadbalancer.inspur.com/healthcheck-port: "0"
+    loadbalancer.inspur.com/healthcheck-period: "30"
+    loadbalancer.inspur.com/healthcheck-timeout: "1"
+    loadbalancer.inspur.com/healthcheck-max: "1"
+    loadbalancer.inspur.com/healthcheck-domain: ""
+    loadbalancer.inspur.com/healthcheck-path: "/"
 spec:
   selector:
     app: nginx
