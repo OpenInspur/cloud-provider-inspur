@@ -99,9 +99,9 @@ func (ic *InCloud) EnsureLoadBalancer(ctx context.Context, clusterName string, s
 	hpo, _ := strconv.Atoi(getServiceAnnotation(service, common.ServiceAnnotationLBportHealthCheck, "0"))
 	pr, _ := strconv.Atoi(getServiceAnnotation(service, common.ServiceAnnotationLBperiodHealthCheck, "30"))
 	ti, _ := strconv.Atoi(getServiceAnnotation(service, common.ServiceAnnotationLBtimeoutHealthCheck, "1"))
-	ma, _ := strconv.Atoi(getServiceAnnotation(service, common.ServiceAnnotationLBmaxHealthCheck, "1"))
+	ma, _ := strconv.Atoi(getServiceAnnotation(service, common.ServiceAnnotationLBmaxHealthCheck, "0"))
 	do := getServiceAnnotation(service, common.ServiceAnnotationLBdomainHealthCheck, "")
-	pa := getServiceAnnotation(service, common.ServiceAnnotationLBpathHealthCheck, "/")
+	pa := getServiceAnnotation(service, common.ServiceAnnotationLBpathHealthCheck, "")
 	//verify ports
 	ports := service.Spec.Ports
 	if len(ports) == 0 {
@@ -415,6 +415,7 @@ func getServiceNodes(service *v1.Service, nodes []*v1.Node) ([]*v1.Node, error) 
 				}
 			}
 		}
+		klog.Infof("retNodes:%v", retNodes)
 		return retNodes, nil
 	}
 	return nil, fmt.Errorf("service:%s/%s dosen't have selector(app)", service.Namespace, service.Name)
