@@ -1,58 +1,32 @@
-# Loadbalancers
+# Kubernetes Cloud Controller Manager for inspur Cloud
 
-Inspur Cloud Controller Manager runs service controller,
-which is responsible for watching services of type ```LoadBalancer```
-and creating Inspur loadbalancers to satisfy its requirements.
-Here are some examples of how it's used.
-
-**step1:**
-
-To create a load balancing SLD by testing users, you need to create it on the load balancing product page. For example, the production line is https://console1.cloud.inspur.com/slb/#/slb?region=cn-north-3
-
-**step2:**
-
-create service,type is loadbalancer
-
-_**External HTTP loadbalancer**_
-
-When you create a service with ```type: LoadBalancer```, an Inspur load balancer will be created.
-The example below will create a nginx deployment and expose it via an Inspur External load balancer.
-
-_**yaml**_
-
-See svc.yaml and deployment.yaml in the test directory for details
-
----
-
-The ```service.beta.kubernetes.io/inspur-load-balancer-slbid``` annotation
-is used on the service to indicate the loadbalancer id we want to use.
-
-The ```loadbalancer.inspur.com/forward-rule``` annotation
-indicates which forwardRule we want to use,such as WRR,RR 
-
-The ```loadbalancer.inspur.com/is-healthcheck``` default is false.
-it means Whether to turn on health check.
+Thank you for visiting the cloud-provider-inspur repository!
 
 
-```bash
-$ kubectl create -f examples/loadbalancers/external-http-nginx.yaml
-```
+`cloud-provider-inspur` is the external Kubernetes cloud controller manager implementation for inspur Cloud. Running `cloud-provider-inspur` allows you build your kubernetes clusters leverage on many cloud services on inspur Cloud. You can read more about Kubernetes cloud controller manager [here](https://kubernetes.io/docs/tasks/administer-cluster/running-cloud-controller/).
 
-Watch the service and await an ```EXTERNAL-IP``` by the following command.
-This will be the load balancer IP which you can use to connect to your service.
+## Development
 
-```bash
-$ watch kubectl get service
-NAME                 CLUSTER-IP     EXTERNAL-IP       PORT(S)        AGE
-http-nginx-service   10.0.0.10      122.112.219.229   80:30000/TCP   5m
-```
+Build an image with command ```make image```
 
-**step3:**
+## QuickStart
 
-You can now access your service via the provisioned load balancer.
+- [Getting-started](docs/getting-started.md)
+- [Usage Guide](docs/cloud-controller-manager.md)
 
-```bash
-$ curl http://122.112.219.229
-```
 
-You can also view it on the loadbalancer page
+## Community, discussion, contribution, and support
+
+Learn how to engage with the Kubernetes community on the [community page](http://kubernetes.io/community/).
+
+You can reach the maintainers of this project at:
+
+- [Slack channel](https://kubernetes.slack.com/messages/sig-cloud-provider)
+- [Mailing list](https://groups.google.com/forum/#!forum/kubernetes-sig-cloud-provider)
+
+### Code of conduct
+
+Participation in the Kubernetes community is governed by the [Kubernetes Code of Conduct](code-of-conduct.md).
+
+## Testing
+See more info in page [Test](https://github.com/kubernetes/cloud-provider-inspur/tree/master/docs/testing.md)

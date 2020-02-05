@@ -1,7 +1,7 @@
 package pkg
 
 import (
-	"gitserver/kubernetes/inspur-cloud-controller-manager/pkg/common"
+	"gitserver/kubernetes/inspur-cloud-controller-manager/cloud-controller-manager/pkg/common"
 	"k8s.io/api/core/v1"
 	corev1lister "k8s.io/client-go/listers/core/v1"
 )

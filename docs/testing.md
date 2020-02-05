@@ -1,20 +1,128 @@
-# Loadbalancers
+# Testing
+
+### UnitTest
+
+Inspur Cloud Controller use mocked cloud SDK to implement code unit test.
+
+```go
+// Test Http configuration.
+func TestEnsureLoadBalancerVswitchID(t *testing.T) {
+
+	prid := nodeid(string(REGION), INSTANCEID)
+	f := NewDefaultFrameWork(
+		// initial service based on your definition
+		&v1.Service{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "https-service",
+				UID:  types.UID(serviceUIDNoneExist),
+				Annotations: map[string]string{
+					ServiceAnnotationLoadBalancerVswitch:     VSWITCH_ID,
+					ServiceAnnotationLoadBalancerAddressType: string(slb.IntranetAddressType),
+				},
+			},
+			Spec: v1.ServiceSpec{
+				Ports: []v1.ServicePort{
+					{Port: listenPort1, TargetPort: targetPort1, Protocol: v1.ProtocolTCP, NodePort: nodePort1},
+				},
+				Type:            v1.ServiceTypeLoadBalancer,
+				SessionAffinity: v1.ServiceAffinityNone,
+			},
+		},
+		// initial node based on your definition.
+		// backend of the created loadbalancer
+		[]*v1.Node{
+			{
+				ObjectMeta: metav1.ObjectMeta{Name: prid},
+				Spec: v1.NodeSpec{
+					ProviderID: prid,
+				},
+			},
+		},
+		nil,
+		nil,
+	)
+
+	f.RunDefault(t, "Create Loadbalancer With VswitchID")
+}
+```
+
+Here is an example of self defined test point.
+```go
+func TestEnsureLoadbalancerDeleted(t *testing.T) {
+	prid := nodeid(string(REGION), INSTANCEID)
+	f := NewDefaultFrameWork(
+		// initial service based on your definition
+		&v1.Service{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:        "https-service",
+				UID:         types.UID(serviceUIDNoneExist),
+				Annotations: map[string]string{},
+			},
+			Spec: v1.ServiceSpec{
+				Ports: []v1.ServicePort{
+					{Port: listenPort1, TargetPort: targetPort1, Protocol: v1.ProtocolTCP, NodePort: nodePort1},
+				},
+				Type:            v1.ServiceTypeLoadBalancer,
+				SessionAffinity: v1.ServiceAffinityNone,
+			},
+		},
+		// initial node based on your definition.
+		// backend of the created loadbalancer
+		[]*v1.Node{
+			{
+				ObjectMeta: metav1.ObjectMeta{Name: prid},
+				Spec: v1.NodeSpec{
+					ProviderID: prid,
+				},
+			},
+		},
+		nil,
+		nil,
+	)
+
+	f.Run(
+		t,
+		"Delete Loadbalancer", "ecs",
+		func() {
+			_, err := f.Cloud.EnsureLoadBalancer(CLUSTER_ID, f.SVC, f.Nodes)
+			if err != nil {
+				t.Fatalf("delete loadbalancer error: create %s", err.Error())
+			}
+			err = f.Cloud.EnsureLoadBalancerDeleted(CLUSTER_ID, f.SVC)
+			if err != nil {
+				t.Fatalf("ensure loadbalancer delete error, %s", err.Error())
+			}
+			exist, _, err := f.LoadBalancer().findLoadBalancer(f.SVC)
+			if err != nil || exist {
+				t.Fatalf("Delete LoadBalancer error: %v, %t", err, exist)
+			}
+		},
+	)
+}
+```
+
+Faked SDK made unit test easier.
+
+Use ```make test``` to run unit test.
+
+### Integration Test
+
+Inspur Cloud Controller Manager integration test is expected to follow the kubernetes testgrid rule addressed in https://github.com/kubernetes/community/pull/2224#issuecomment-395410751 for consistency.
+
+### System Test
 
 Inspur Cloud Controller Manager runs service controller,
 which is responsible for watching services of type ```LoadBalancer```
 and creating Inspur loadbalancers to satisfy its requirements.
-Here are some examples of how it's used.
-也可作为测试人员测试步骤,
-按照slb组文档[http://git.inspur.com/inspurcloud-api-doc/slb-api-doc/blob/master/3-api-details.md#1-create-loadbalancer]
-所说:[网络类型：取值:network(公网)、innernet(内网，暂未上线)],可以先测External HTTP loadbalancer
+[http://git.inspur.com/inspurcloud-api-doc/slb-api-doc/blob/master/3-api-details.md#1-create-loadbalancer]
 
 **step1:**
 
-以测试用户来创建一个负载均衡sld，需要在负载均衡产品页面创建，如产线为https://console1.cloud.inspur.com/slb/#/slb?region=cn-north-3
+To create a load balancer SLD by testing users, you need to create it on the load balancing product page. For example, the production line is https://console1.cloud.inspur.com/slb/#/slb?region=cn-north-3
 
 **step2:**
 
-创建service,type为loadbalancer
+create service,type is loadbalancer
 
 _**External HTTP loadbalancer**_
 
@@ -73,7 +181,7 @@ The ```loadbalancer.inspur.com/forward-rule``` annotation
 indicates which forwardRule we want to use,such as WRR,RR 
 
 The ```loadbalancer.inspur.com/is-healthcheck``` default is false.
-it means 是否开启健康检查.
+it means Whether to turn on health check.
 
 
 ```bash
@@ -96,5 +204,3 @@ You can now access your service via the provisioned load balancer.
 ```bash
 $ curl http://122.112.219.229
 ```
-
-也可以在负载均衡页面查看

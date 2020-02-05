@@ -5,7 +5,7 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
-	"gitserver/kubernetes/inspur-cloud-controller-manager/pkg/common"
+	"gitserver/kubernetes/inspur-cloud-controller-manager/cloud-controller-manager/pkg/common"
 	"io/ioutil"
 	"k8s.io/api/core/v1"
 	"k8s.io/cloud-provider"

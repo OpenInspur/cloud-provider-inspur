@@ -1,20 +1,29 @@
-# Loadbalancers
+# inspur Cloud Provider
 
-Inspur Cloud Controller Manager runs service controller,
-which is responsible for watching services of type ```LoadBalancer```
-and creating Inspur loadbalancers to satisfy its requirements.
-Here are some examples of how it's used.
-也可作为测试人员测试步骤,
-按照slb组文档[http://git.inspur.com/inspurcloud-api-doc/slb-api-doc/blob/master/3-api-details.md#1-create-loadbalancer]
-所说:[网络类型：取值:network(公网)、innernet(内网，暂未上线)],可以先测External HTTP loadbalancer
+## Accessing services through server load balancer
+
+You can use Inspur cloud load balancer to access services.
+For details, please refer to the official document: [access the service through server load balancer] (http:// )
+
+## background information
+
+- CloudProvider would not deal with your LoadBalancer(which was provided by user) listener by default if your cloud-controller-manager version is great equal then v1.9.3. User need to config their listener by themselves or using `service.beta.kubernetes.io/inspur-cloud-loadbalancer-force-override-listeners: "true"` to force overwrite listeners.<br />
+Using the following command to find the version of your cloud-controller-manager
+
+```
+root@master # kubectl get po -n kube-system -o yaml|grep image:|grep cloud-con|uniq
+image: registry.icp.cn-....-controller-manager-amd64:v1.9.3
+```
+
+## How to create service with Type=LoadBalancer
 
 **step1:**
 
-以测试用户来创建一个负载均衡sld，需要在负载均衡产品页面创建，如产线为https://console1.cloud.inspur.com/slb/#/slb?region=cn-north-3
+To create a load balancer SLD by testing users, you need to create it on the load balancing product page. For example, the production line is https://console1.cloud.inspur.com/slb/#/slb?region=cn-north-3
 
 **step2:**
 
-创建service,type为loadbalancer
+create service,type is loadbalancer
 
 _**External HTTP loadbalancer**_
 
@@ -51,7 +60,7 @@ apiVersion: v1
 metadata:
   name: external-http-nginx-service
   annotations:
-    service.beta.kubernetes.io/inspur-load-balancer-slbid: #这里填写step1创建的slbid
+    service.beta.kubernetes.io/inspur-load-balancer-slbid: #Fill in slbid created by step1 here
     loadbalancer.inspur.com/forward-rule: "RR"
     loadbalancer.inspur.com/is-healthcheck: "0"
 spec:
@@ -73,7 +82,7 @@ The ```loadbalancer.inspur.com/forward-rule``` annotation
 indicates which forwardRule we want to use,such as WRR,RR 
 
 The ```loadbalancer.inspur.com/is-healthcheck``` default is false.
-it means 是否开启健康检查.
+it means Whether to turn on health check.
 
 
 ```bash
@@ -96,5 +105,3 @@ You can now access your service via the provisioned load balancer.
 ```bash
 $ curl http://122.112.219.229
 ```
-
-也可以在负载均衡页面查看
