@@ -18,5 +18,5 @@ We have full documentation on how to get started contributing here:
 
 ## Contact Information
 
-- [Slack](https://kubernetes.slack.com/messages/sig-cloud-provider)
+- [Slack channel](https://kubernetes.slack.com/messages/sig-cloud-provider)
 - [Mailing List](https://groups.google.com/forum/#!forum/kubernetes-sig-cloud-provider)
