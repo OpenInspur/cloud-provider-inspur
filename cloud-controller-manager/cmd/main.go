@@ -17,7 +17,7 @@ import (
 
 	// NOTE: Importing all in-tree cloud-providers is not required when
 	// implementing an out-of-tree cloud-provider.
-	_ "gitserver/kubernetes/inspur-cloud-controller-manager/pkg" //pre load loadbalance incloud init
+	_ "gitserver/kubernetes/inspur-cloud-controller-manager/cloud-controller-manager/pkg/common" //pre load loadbalance incloud init
 	_ "k8s.io/kubernetes/pkg/util/prometheusclientgo"            // load all the prometheus client-go plugins
 	_ "k8s.io/kubernetes/pkg/version/prometheus"                 // for version metric registration
 )
