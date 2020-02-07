@@ -29,7 +29,6 @@ $ META_EP=http://100.100.100.200/latest/meta-data
 $ echo `curl -s $META_EP/region-id`.`curl -s $META_EP/instance-id`
 ```
 
-
 For now, you should have a running kubernetes cluster. Try some example command like ```kubectl get no ```
 
 ### Install inspur CloudProvider support.
