@@ -17,16 +17,13 @@
 - Cloud Controller Manager（简称CCM）会为`Type=LoadBalancer`类型的Service创建或配置浪潮云负载均衡（SLB），包含**SLB**、**监听**、**虚拟服务器组**等资源。
 - 对于非LoadBalancer类型的service则不会为其配置负载均衡，这包含如下场景：当用户将`Type=LoadBalancer`的service变更为`Type!=LoadBalancer`时，CCM也会删除其原先为该Service创建的SLB.
 - 自动刷新配置：CCM使用声明式API，会在一定条件下自动根据service的配置刷新浪潮云负载均衡配置，所有用户自行在SLB控制台上修改的配置均存在被覆盖的风险（使用已有SLB同时不覆盖监听的场景除外），因此不能在SLB控制台手动修改Kubernetes创建并维护的SLB的任何配置，否则有配置丢失的风险。
-- 同时支持为serivce指定一个已有的负载均衡，或者让CCM自行创建新的负载均衡。但两种方式在SLB的管理方面存在一些差异：
+- 只支持为serivce指定一个已有的负载均衡。
 - 指定已有SLB
   - 需要为Service设置`service.beta.kubernetes.io/inspur-load-balancer-slbid` annotation。
   - SLB配置：此时CCM会使用该SLB做为Service的SLB，并根据其他annotation配置SLB，并且自动的为SLB创建多个虚拟服务器组（当集群节点变化的时候，也会同步更新虚拟服务器组里面的节点）。
   - 转发规则配置：通过添加`loadbalancer.inspur.com/forward-rule`来配置转发规则，例如WR是加权轮循，RR是轮循。
   - 健康检查配置配置：是否配置监听取决于`loadbalancer.inspur.com/is-healthcheck`是否设置为true。 如果设置为false，那么CCM不会为SLB管理任何健康检查。如果设置为true，那么CCM会采用健康检查。
   - SLB的删除： 当Service删除的时候CCM不会删除用户通过id指定的已有SLB。
-- CCM管理的SLB  
-  - CCM会根据service的配置自动的创建配置**SLB**、**监听**、**虚拟服务器组**等资源，所有资源归CCM管理，因此用户不得手动在SLB控制台更改以上资源的配置，否则CCM在下次Reconcile的时候将配置刷回service所声明的配置，造成非用户预期的结果。
-  - SLB的删除：当Service删除的时候CCM会删除该SLB。
 - 后端服务器更新
   - CCM会自动的为该Service对应的SLB刷新后端虚拟服务器组。当Service对应的后端Endpoint发生变化的时候或者集群节点变化的时候都会自动的更新SLB的后端Server。
   - `spec.ExternalTraffic = Cluster`模式的Service，CCM默认会将所有节点挂载到SLB的后端（使用BackendLabel标签配置后端的除外）。由于SLB限制了每个ECS上能够attach的SLB的个数（quota），因此这种方式会快速的消耗该quota,当quota耗尽后，会造成Service Reconcile失败。解决的办法，可以使用Local模式的Service。

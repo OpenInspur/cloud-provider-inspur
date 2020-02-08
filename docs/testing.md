@@ -48,57 +48,6 @@ func TestEnsureLoadBalancerVswitchID(t *testing.T) {
 
 Here is an example of self defined test point.
 ```go
-func TestEnsureLoadbalancerDeleted(t *testing.T) {
-	prid := nodeid(string(REGION), INSTANCEID)
-	f := NewDefaultFrameWork(
-		// initial service based on your definition
-		&v1.Service{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:        "https-service",
-				UID:         types.UID(serviceUIDNoneExist),
-				Annotations: map[string]string{},
-			},
-			Spec: v1.ServiceSpec{
-				Ports: []v1.ServicePort{
-					{Port: listenPort1, TargetPort: targetPort1, Protocol: v1.ProtocolTCP, NodePort: nodePort1},
-				},
-				Type:            v1.ServiceTypeLoadBalancer,
-				SessionAffinity: v1.ServiceAffinityNone,
-			},
-		},
-		// initial node based on your definition.
-		// backend of the created loadbalancer
-		[]*v1.Node{
-			{
-				ObjectMeta: metav1.ObjectMeta{Name: prid},
-				Spec: v1.NodeSpec{
-					ProviderID: prid,
-				},
-			},
-		},
-		nil,
-		nil,
-	)
-
-	f.Run(
-		t,
-		"Delete Loadbalancer", "ecs",
-		func() {
-			_, err := f.Cloud.EnsureLoadBalancer(CLUSTER_ID, f.SVC, f.Nodes)
-			if err != nil {
-				t.Fatalf("delete loadbalancer error: create %s", err.Error())
-			}
-			err = f.Cloud.EnsureLoadBalancerDeleted(CLUSTER_ID, f.SVC)
-			if err != nil {
-				t.Fatalf("ensure loadbalancer delete error, %s", err.Error())
-			}
-			exist, _, err := f.LoadBalancer().findLoadBalancer(f.SVC)
-			if err != nil || exist {
-				t.Fatalf("Delete LoadBalancer error: %v, %t", err, exist)
-			}
-		},
-	)
-}
 ```
 
 Faked SDK made unit test easier.
@@ -111,9 +60,7 @@ Inspur Cloud Controller Manager integration test is expected to follow the kuber
 
 ### System Test
 
-Inspur Cloud Controller Manager runs service controller,
-which is responsible for watching services of type ```LoadBalancer```
-and creating Inspur loadbalancers to satisfy its requirements.
+Inspur Cloud Controller Manager runs service controller,which is responsible for watching services of type ```LoadBalancer```   and creating Inspur loadbalancers to satisfy its requirements.
 [http://git.inspur.com/inspurcloud-api-doc/slb-api-doc/blob/master/3-api-details.md#1-create-loadbalancer]
 
 **step1:**
