@@ -4,7 +4,7 @@
 # Vars describing project
 NAME= cloud-provider-inspur
 GIT_REPOSITORY= github.com/inspurcsg/cloud-provider-inspur
-IMG?= registry.inspurcloud.cn:5000/csf/inspur-cloud-controller-manager
+REGISTRY?= registry.inspurcloud.cn:5000/csf
 
 # Set defaults for needed vars in case version_info script did not set
 # Revision set to number of commits ahead
@@ -30,14 +30,16 @@ bin/cloud-provider-inspur
 bin/cloud-provider-inspur:
 CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags "-w" -o bin/manager ./cmd/main.go
 
-bin/.docker-images-build-timestamp:
-bin/cloud-provider-inspur Makefile Dockerfile
-docker build -q -t $(DOCKER_IMAGE_NAME):$(IMAGE_LABLE) -t dockerhub.inspurcloud.com/$(DOCKER_IMAGE_NAME):$(IMAGE_LABLE) . > bin/.docker-images-build-timestamp
+bin/.docker-images-build-timestamp: bin/qingcloud-cloud-controller-manager Makefile Dockerfile
+docker build -q -t  $(REGISTRY)/$(NAME):$(IMAGE_LABLE) -t dockerhub.inspur.cloud.com/ $(REGISTRY)/$(NAME):$(IMAGE_LABLE) . > bin/.docker-images-build-timestamp
+
+image: bin/cloud-provider-inspur Makefile Dockerfile
+docker build -t $(REGISTRY)/$(NAME):$(IMAGE_LABLE)  .
 
 publish:
 test go-build
-docker build -t ${IMG}  -f deploy/Dockerfile bin/
-docker push ${IMG}
+docker build -t $(REGISTRY)/$(NAME):$(IMAGE_LABLE)  -f Dockerfile bin/
+docker push $(REGISTRY)/$(NAME):$(IMAGE_LABLE)
 
 clean:
 rm -rf bin/ && if -f bin/.docker-images-build-timestamp then docker rmi `cat bin/.docker-images-build-timestamp`
