@@ -7,17 +7,7 @@ Thank you for visiting the cloud-provider-inspur repository!
 
 ## Development
 
-Build an image with the command
-
-```bash
-# for example REGISTRY=registry.inspurcloud.cn/
-# YExecute the following command in the directory where the dockerfile is located.This will build an docker image from binary 
-$ docker build -t $(REGISTRY):$(port)/cloud-provider-inspur:$(TAG) .
-# push to your specified registry.
-$ docker push 
-# Query the created image
-$ docker images |grep cloud-provider-inspur
-```
+Test project with command ```make test``` and Build an image with command ```make image```
 
 ## QuickStart
 
