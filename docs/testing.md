@@ -2,55 +2,60 @@
 
 ### UnitTest
 
-Inspur Cloud Controller use mocked cloud SDK to implement code unit test.
+Inspur cloud controller uses golang's own testing framework(Combined with gomonkey framework) for unit test.
 
 ```go
-// Test Http configuration.
-func TestEnsureLoadBalancerVswitchID(t *testing.T) {
-
-	prid := nodeid(string(REGION), INSTANCEID)
-	f := NewDefaultFrameWork(
-		// initial service based on your definition
-		&v1.Service{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: "https-service",
-				UID:  types.UID(serviceUIDNoneExist),
-				Annotations: map[string]string{
-					ServiceAnnotationLoadBalancerVswitch:     VSWITCH_ID,
-					ServiceAnnotationLoadBalancerAddressType: string(slb.IntranetAddressType),
-				},
-			},
-			Spec: v1.ServiceSpec{
-				Ports: []v1.ServicePort{
-					{Port: listenPort1, TargetPort: targetPort1, Protocol: v1.ProtocolTCP, NodePort: nodePort1},
-				},
-				Type:            v1.ServiceTypeLoadBalancer,
-				SessionAffinity: v1.ServiceAffinityNone,
-			},
-		},
-		// initial node based on your definition.
-		// backend of the created loadbalancer
-		[]*v1.Node{
-			{
-				ObjectMeta: metav1.ObjectMeta{Name: prid},
-				Spec: v1.NodeSpec{
-					ProviderID: prid,
-				},
-			},
-		},
-		nil,
-		nil,
-	)
-
-	f.RunDefault(t, "Create Loadbalancer With VswitchID")
+func TestGetLoadBalancer(t *testing.T) {
+	config :=&InCloud{}
+	service :=&v1.Service{}
+	patch1:=ApplyFunc(getServiceAnnotation,func (service *v1.Service, annotationKey string, defaultSetting string) string {
+		return "123"
+	})
+	patch2:=ApplyFunc(getKeyCloakToken,func (requestedSubject, tokenClientId, clientSecret, keycloakUrl string, ic *InCloud) (string, error) {
+		return "",nil
+	})
+	patch3:=ApplyFunc( describeLoadBalancer,func(url, token, slbId string) (*LoadBalancer, error) {
+		return &LoadBalancer{
+			RegionId:"1",
+			VpcId:"2",
+		},nil
+	})
+	defer patch1.Reset()
+	defer patch2.Reset()
+	defer patch3.Reset()
+	GetLoadBalancer(config,service)
 }
 ```
 
 Here is an example of self defined test point.
 ```go
+func TestEnsureLoadBalancer(t *testing.T) {
+	c :=&InCloud{}
+	ss := &v1.Service{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:        "https-service",
+			UID:         types.UID(serviceUIDNoneExist),
+			Annotations: map[string]string{},
+		},
+		Spec: v1.ServiceSpec{
+			Ports: []v1.ServicePort{
+				{Port: listenPort1, TargetPort: targetPort1, Protocol: v1.ProtocolTCP, NodePort: nodePort1},
+			},
+			Type:            v1.ServiceTypeLoadBalancer,
+			SessionAffinity: v1.ServiceAffinityNone,
+		},
+	}
+	nn := []*v1.Node{
+		{
+			ObjectMeta: metav1.ObjectMeta{Name: "222"},
+			Spec: v1.NodeSpec{
+				ProviderID: "222",
+			},
+		},
+	}
+  c.EnsureLoadBalancer(context.TODO(),clusterName,ss,nn)
+}
 ```
-
-Faked SDK made unit test easier.
 
 Use ```make test``` to run unit test.
 
@@ -77,7 +82,6 @@ When you create a service with ```type: LoadBalancer```, an Inspur load balancer
 The example below will create a nginx deployment and expose it via an Inspur External load balancer.
 
 _**yaml**_
-
 
 
 ```
