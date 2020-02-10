@@ -6,11 +6,17 @@ A valid tag is required to build your image. Tag with ```git tag v1.9.3```
 ## Build `cloud-controller-manager` image
 
 ```bash
-# for example. export REGISTRY=registry.inspur.com/acs
-$ export REGISTRY=<YOUR_REGISTRY_NAME>
-# This will build cloud-controller-manager from source code and build an docker image from binary and push to your specified registry.
-# You can also use `make binary && make build` if you don't want push this image to your registry.
-$ make image
-$ docker images |grep cloud-controller-manager
+# for example REGISTRY=registry.inspurcloud.cn/
+# YExecute the following command in the directory where the dockerfile is located.This will build an docker image from binary 
+$ docker build -t $(REGISTRY):$(port)/cloud-provider-inspur:$(TAG) .
+# push to your specified registry.
+$ docker push 
+# Query the created image
+$ docker images |grep cloud-provider-inspur
 ```
 
+## Testing
+
+### UnitTest
+
+See [Testing UnitTest](https://github.com/kubernetes/cloud-provider-inspur/tree/master/docs/testing.md)
