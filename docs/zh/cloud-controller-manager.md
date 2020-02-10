@@ -8,9 +8,9 @@
 
 **先决条件**
 
--一个可用的ACS-kubernetes集群
--用kubectl连接到kubernetes集群
--创建nginx部署。下面的示例基于nginx部署
+- 一个可用的ACS-kubernetes集群
+- 用kubectl连接到kubernetes集群
+- 创建nginx部署。下面的示例基于nginx部署
 
 ## 注意事项
 
@@ -26,8 +26,6 @@
   - SLB的删除： 当Service删除的时候CCM不会删除用户通过id指定的已有SLB。
 - 后端服务器更新
   - CCM会自动的为该Service对应的SLB刷新后端虚拟服务器组。当Service对应的后端Endpoint发生变化的时候或者集群节点变化的时候都会自动的更新SLB的后端Server。
-  - `spec.ExternalTraffic = Cluster`模式的Service，CCM默认会将所有节点挂载到SLB的后端（使用BackendLabel标签配置后端的除外）。由于SLB限制了每个ECS上能够attach的SLB的个数（quota），因此这种方式会快速的消耗该quota,当quota耗尽后，会造成Service Reconcile失败。解决的办法，可以使用Local模式的Service。
-  - `spec.ExternalTraffic = Local`模式的Service，CCM默认只会讲Service对应的Pod所在的节点加入到SLB后端。这会明显降低quota的消耗速度。同时支持四层源IP保留。
   - 任何情况下CCM不会将Master节点作为SLB的后端。
 ## 如何使用
 
@@ -94,7 +92,7 @@ spec:
 意思是是否开启健康检查。
 
 将yaml模板保存到test/loadbalancers/external-http-nginx.yaml，然后使用“kubectl create-f test/loadbalancers/external http nginx.yaml”创建服务。
-监视服务并通过以下命令等待“EXTERNAL-IP”。
+监视服务并通过以下命令等待```EXTERNAL-IP```。
 这将是负载平衡器IP，您可以使用它连接到您的服务。
 
 ```bash
