@@ -123,7 +123,7 @@ func newInCloud(config Config) (cloudprovider.Interface, error) {
 
 	klog.Infof("InCloud provider init done")
 	b, _ := json.Marshal(&qc)
-	klog.Infof("InCloud is ", string(b))
+	klog.Infof("InCloud is :%v", string(b))
 	return &qc, nil
 }
 

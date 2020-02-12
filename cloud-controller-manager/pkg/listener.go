@@ -126,7 +126,7 @@ func (l *Listener) DeleteListener(config *InCloud, service *corev1.Service) erro
 	}
 	error = deleteListener(config.LbUrlPre, token, slbid, l.ListenerId)
 	if nil != error {
-		klog.Error("Deleting LoadBalancerListener:%v", error)
+		klog.Errorf("Deleting LoadBalancerListener:%v", error)
 	}
 	//if l.Status == nil {
 	//	return fmt.Errorf("Could not delete noexit listener")

@@ -102,7 +102,7 @@ func describeLoadBalancer(url, token, slbId string) (*LoadBalancer, error) {
 		return nil, fmt.Errorf("response not ok %d", res.StatusCode)
 	}
 	var result []LoadBalancer
-	klog.Infof("result is: ", res.StatusCode, string(body))
+	klog.Infof("result is:%v,%v ", res.StatusCode, string(body))
 	err = json.Unmarshal(body, &result)
 	if err != nil {
 		klog.Errorf("Unmarshal body fail: %v", err)
@@ -293,7 +293,7 @@ func createListener(url, token string, opts CreateListenerOpts) (*Listener, erro
 		klog.Errorf("opts conver to bytes error %v", err)
 		return nil, err
 	}
-	klog.Infof("requestBody is ", string(serversByte))
+	klog.Infof("requestBody is : %v", string(serversByte))
 	req, err := http.NewRequest("POST", reqUrl, bytes.NewReader(serversByte))
 	if err != nil {
 		klog.Errorf("Request error %v", err)
@@ -339,7 +339,7 @@ func modifyListener(url, token, listenerid string, opts CreateListenerOpts) (*Li
 		klog.Errorf("opts conver to bytes error %v", err)
 		return nil, err
 	}
-	klog.Infof("requestBody is ", string(serversByte))
+	klog.Infof("requestBody is : %v", string(serversByte))
 	req, err := http.NewRequest("PUT", reqUrl, bytes.NewReader(serversByte))
 	if err != nil {
 		klog.Errorf("Request error %v", err)
@@ -413,7 +413,7 @@ func createBackend(url, token string, opts CreateBackendOpts) (*BackendList, err
 	reqUrl := url + "/" + opts.SLBId + "/listeners/" + opts.ListenerId + "/members"
 	klog.Infof("createBackend requestUrl:%v,token:%v", reqUrl, token)
 	serversByte, err := json.Marshal(&opts.Servers)
-	klog.Infof("requestBody is ", string(serversByte))
+	klog.Infof("requestBody is : %v", string(serversByte))
 	if nil != err {
 		klog.Errorf("servers conver to bytes error %v", err)
 		return nil, err

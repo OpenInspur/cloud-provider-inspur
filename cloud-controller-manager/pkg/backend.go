@@ -80,7 +80,7 @@ func UpdateBackends(config *InCloud, listener *Listener, backends interface{}) e
 	}
 	backs, error := describeBackendservers(config.LbUrlPre, token, listener.SLBId, listener.ListenerId)
 	if error != nil {
-		klog.Errorf("describeBackendservers failed ", error)
+		klog.Errorf("describeBackendservers failed : %v", error)
 		return error
 	}
 	nodes, ok := backends.([]*v1.Node)
@@ -129,7 +129,7 @@ func UpdateBackends(config *InCloud, listener *Listener, backends interface{}) e
 		}
 		_, err := CreateBackends(config, opts)
 		if nil != err {
-			klog.Infof("CreateBackends failed: ", err)
+			klog.Infof("CreateBackends failed: %v", err)
 			return err
 		}
 	}
@@ -149,7 +149,7 @@ func UpdateBackends(config *InCloud, listener *Listener, backends interface{}) e
 	if len(del) > 0 {
 		err := DeleteBackends(config, listener.SLBId, listener.ListenerId, del)
 		if nil != err {
-			klog.Infof("DeleteBackends failed: ", err)
+			klog.Infof("DeleteBackends failed: %v", err)
 			return err
 		}
 	}
@@ -173,7 +173,7 @@ func GetBackends(config *InCloud, slbid, listenerId string) ([]Backend, error) {
 	}
 	backends, error := describeBackendservers(config.LbUrlPre, token, slbid, listenerId)
 	if nil != error {
-		klog.Infof("GetBackends failed: ", error)
+		klog.Infof("GetBackends failed: %v", error)
 		return nil, error
 	}
 	return backends, nil

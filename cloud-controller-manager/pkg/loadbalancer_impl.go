@@ -293,7 +293,7 @@ func (ic *InCloud) EnsureLoadBalancerDeleted(ctx context.Context, clusterName st
 	}
 	ls, err := GetListeners(ic, service)
 	if err != nil {
-		klog.Infof("get ls fail ,error : ", err)
+		klog.Infof("get ls fail ,error : %v", err)
 		return err
 	}
 
@@ -309,7 +309,7 @@ func (ic *InCloud) EnsureLoadBalancerDeleted(ctx context.Context, clusterName st
 		if listener != nil {
 			backends, err := GetBackends(ic, lb.SlbId, listener.ListenerId)
 			if nil != err {
-				klog.Errorf("getBackens fail ,error : ", err)
+				klog.Errorf("getBackens fail ,error : %v", err)
 				return err
 			}
 			if nil != backends {
@@ -321,7 +321,7 @@ func (ic *InCloud) EnsureLoadBalancerDeleted(ctx context.Context, clusterName st
 			}
 			error = listener.DeleteListener(ic, service)
 			if nil != error {
-				klog.Infof("DeleteListener fail ,error : ", err)
+				klog.Infof("DeleteListener fail ,error : %v", err)
 				return err
 			}
 		}
