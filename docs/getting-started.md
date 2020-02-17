@@ -12,17 +12,17 @@
 
 ## Preparation
 
-1. 修改所有节点的kubelet 配置参数，添加参数 
+1. Modify kubelet configuration parameters of all nodes and add parameters. 
 ```
 - --cloud-config=/etc/kubernetes/cloud-config
 - --cloud-provider=external
 ```
-可能还需要添加其他启动项
+You may also need to add other startup items.
 
-2. 在**master**节点生成配置文件，```kubernetes-deploy/etc/kubernetes/cloud-config```中需要增加配置，```incloud_slbUrl_prefix```
-Node需要打annotation(kube-deploy中实现)：```NodeAnnotationInstanceID = “node.beta.kubernetes.io/instance-id”```
+2. Generate a configuration file in the Master node，```kubernetes-deploy/etc/kubernetes/cloud-config```Configuration needs to be added，```incloud_slbUrl_prefix```
+Node needs annotation (implemented in kube-deploy)：```NodeAnnotationInstanceID = “node.beta.kubernetes.io/instance-id”```
 
-3. 创建LB Service打annotation
+3. Create LB service and annotate.
 ```
 ServiceAnnotationInternalSlbId = "service.beta.kubernetes.io/inspur-internal-load-balancer-slbid"
 ServiceAnnotationLBForwardRule = "loadbalancer.inspur.com/forward-rule"
