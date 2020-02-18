@@ -57,27 +57,22 @@ The repository url which meets all the requirements is https://github.com/inspur
 
 ### User Experience Reports
 
-1. The cloud-controller-manager Plug-in unit is created successfully and running normally.
+1. User want to modify the image repository's username.
 
-![1581493267842](https://raw.githubusercontent.com/OpenInspur/cloud-provider-inspur/master/docs/media/1.png)
+   ![](https://raw.githubusercontent.com/OpenInspur/cloud-provider-inspur/master/docs/media/re.png)
 
-2. The deployment of nginx and its service is successful.
+2. Pod start failed due to user using wrong image name: PullImageBackOff.
 
-![1581493316451](https://raw.githubusercontent.com/OpenInspur/cloud-provider-inspur/master/docs/media/2.png)
+   ![](https://raw.githubusercontent.com/OpenInspur/cloud-provider-inspur/master/docs/media/image.png)
 
-3. Load balancing available.
+3. The user does not pass the authentication when pushing the image.
 
-![1581493330883](https://raw.githubusercontent.com/OpenInspur/cloud-provider-inspur/master/docs/media/3.png)
+   ![](https://raw.githubusercontent.com/OpenInspur/cloud-provider-inspur/master/docs/media/Au.png)
 
-4. Update the member of the loadbalancer when the pod number changes (the node increases),the number of nginx copies is 2, which are all on the slave1 node. Query the member of the loadbalancer.
+4. Users want to create SLB through cloud provider Inspur.
 
-   ![1581493686508](https://raw.githubusercontent.com/OpenInspur/cloud-provider-inspur/master/docs/media/4.png)
+   ![](https://raw.githubusercontent.com/OpenInspur/cloud-provider-inspur/master/docs/media/Slb.png)
 
-5. Modify the current number of replicas to 4. On the slave1 / slave2 node, query the member of the   loadbalancer.
-
-   ![](https://raw.githubusercontent.com/OpenInspur/cloud-provider-inspur/master/docs/media/5.png)
-
-   ![](https://raw.githubusercontent.com/OpenInspur/cloud-provider-inspur/master/docs/media/6.png)
 
 ### Testgrid Integration
 
