@@ -64,7 +64,7 @@ The repository url which meets all the requirements is https://github.com/inspur
 2. Pod start failed due to user using wrong image name: PullImageBackOff.
 
    ![](https://raw.githubusercontent.com/OpenInspur/cloud-provider-inspur/master/docs/media/image.png)
-
+   
 3. The user does not pass the authentication when pushing the image.
 
    ![](https://raw.githubusercontent.com/OpenInspur/cloud-provider-inspur/master/docs/media/Au.png)
