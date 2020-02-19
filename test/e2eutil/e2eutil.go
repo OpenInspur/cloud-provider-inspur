@@ -78,7 +78,7 @@ func WaitForLoadBalancerDeleted(config *pkg.InCloud,service *v1.Service) error {
 	if err != nil {
 		return err
 	}
-	if len(output.State) == 0 {
+	if output == nil {
 		return nil
 	}
 	log.Printf("id:%s, name:%s, status:%s", output.SlbId, output.SlbName, output.State)

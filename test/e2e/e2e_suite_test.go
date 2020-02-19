@@ -40,7 +40,7 @@ var (
 	qcService     *pkg.InCloud
 	qingcloudLB   pkg.LoadBalancer
 	testEIPID     string
-	testEIPAddr   string
+	testEIPAddress   string
 )
 
 func getWorkspace() string {
@@ -50,8 +50,6 @@ func getWorkspace() string {
 
 var _ = BeforeSuite(func() {
 	testNamespace = os.Getenv("TEST_NS")
-	testEIPID = os.Getenv("TEST_EIP")
-	testEIPAddr = os.Getenv("TEST_EIP_ADDR")
 	Expect(testNamespace).ShouldNot(BeEmpty())
 	workspace = getWorkspace() + "/../../.."
 	home := homeDir()

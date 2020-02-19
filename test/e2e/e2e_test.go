@@ -32,13 +32,13 @@ var _ = Describe("InCloud LoadBalancer e2e-test", func() {
 		time.Sleep(3 * time.Minute)
 		log.Println("Wake up, we can test now")
 		Eventually(func() error {
-			return e2eutil.ServiceHasEIP(k8sclient, serviceName, "default", testEIPAddr)
+			return e2eutil.ServiceHasEIP(k8sclient, serviceName, "default", testEIPAddress)
 		}, 2*time.Minute, 20*time.Second).Should(Succeed())
 
 		log.Println("Successfully assign a ip")
 
-		Eventually(func() int { return e2eutil.GerServiceResponse(testEIPAddr, 8089) }, time.Second*20, time.Second*5).Should(Equal(http.StatusOK))
-		Eventually(func() int { return e2eutil.GerServiceResponse(testEIPAddr, 8090) }, time.Second*20, time.Second*5).Should(Equal(http.StatusOK))
+		Eventually(func() int { return e2eutil.GerServiceResponse(testEIPAddress, 8089) }, time.Second*20, time.Second*5).Should(Equal(http.StatusOK))
+		Eventually(func() int { return e2eutil.GerServiceResponse(testEIPAddress, 8090) }, time.Second*20, time.Second*5).Should(Equal(http.StatusOK))
 		log.Println("Successfully get a 200 response")
 	})
 	It("Should work as expected when using sample yamls", func() {
@@ -58,10 +58,10 @@ var _ = Describe("InCloud LoadBalancer e2e-test", func() {
 		time.Sleep(2 * time.Minute)
 		log.Println("Wake up, we can test now")
 		Eventually(func() error {
-			return e2eutil.ServiceHasEIP(k8sclient, serviceName, "default", testEIPAddr)
+			return e2eutil.ServiceHasEIP(k8sclient, serviceName, "default", testEIPAddress)
 		}, 3*time.Minute, 20*time.Second).Should(Succeed())
 		log.Println("Successfully assign a ip")
-		Eventually(func() int { return e2eutil.GerServiceResponse(testEIPAddr, 8088) }, time.Second*20, time.Second*5).Should(Equal(http.StatusOK))
+		Eventually(func() int { return e2eutil.GerServiceResponse(testEIPAddress, 8088) }, time.Second*20, time.Second*5).Should(Equal(http.StatusOK))
 		log.Println("Successfully get a 200 response")
 
 		//update size
