@@ -3,7 +3,7 @@
 
 # Vars describing project
 NAME= cloud-provider-inspur
-GIT_REPOSITORY= github.com/inspurcsg/cloud-provider-inspur
+GIT_REPOSITORY= github.com/OpenInspur/cloud-provider-inspur
 REGISTRY?= registry.inspurcloud.cn:5000/csf
 
 # Set defaults for needed vars in case version_info script did not set
