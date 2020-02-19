@@ -14,10 +14,10 @@
 
 ## 注意事项
 
-- Cloud Controller Manager（简称CCM）会为`Type=LoadBalancer`类型的Service创建或配置浪潮云负载均衡（SLB），包含**SLB**、**监听**、**虚拟服务器组**等资源。
+- Cloud Controller Manager（简称CCM）会为`Type=LoadBalancer`类型的Service配置浪潮云负载均衡（SLB），包含**SLB**、**监听**、**虚拟服务器组**等资源。
 - 对于非LoadBalancer类型的service则不会为其配置负载均衡，这包含如下场景：当用户将`Type=LoadBalancer`的service变更为`Type!=LoadBalancer`时，CCM也会删除其原先为该Service创建的SLB.
 - 自动刷新配置：CCM使用声明式API，会在一定条件下自动根据service的配置刷新浪潮云负载均衡配置，所有用户自行在SLB控制台上修改的配置均存在被覆盖的风险（使用已有SLB同时不覆盖监听的场景除外），因此不能在SLB控制台手动修改Kubernetes创建并维护的SLB的任何配置，否则有配置丢失的风险。
-- 只支持为serivce指定一个已有的负载均衡。
+- 只支持为serivce指定一个已有的负载均衡服务。
 - 指定已有SLB
   - 需要为Service设置`service.beta.kubernetes.io/inspur-load-balancer-slbid` annotation。
   - SLB配置：此时CCM会使用该SLB做为Service的SLB，并根据其他annotation配置SLB，并且自动的为SLB创建多个虚拟服务器组（当集群节点变化的时候，也会同步更新虚拟服务器组里面的节点）。
@@ -29,7 +29,7 @@
   - 任何情况下CCM不会将Master节点作为SLB的后端。
 ## 如何使用
 
-浪潮云控制器管理器运行服务控制器，负责监视loadbalancer类型的服务，并创建浪潮loadbalancer以满足其需求。
+浪潮云控制器管理器运行服务控制器，负责监视loadbalancer类型的服务，不具备创建浪潮loadbalancer的能力。
 下面是一些如何使用它的例子。
 
 **步骤1:**
