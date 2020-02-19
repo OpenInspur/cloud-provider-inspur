@@ -18,4 +18,4 @@ $ docker images |grep cloud-provider-inspur
 
 ### UnitTest
 
-See [Testing UnitTest](https://github.com/kubernetes/cloud-provider-inspur/tree/master/docs/testing.md)
+See [Testing UnitTest](https://github.com/OpenInspur/cloud-provider-inspur/blob/master/docs/testing.md)
