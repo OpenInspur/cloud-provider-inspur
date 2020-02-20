@@ -1,16 +1,16 @@
 package e2e
 
 import (
+	"context"
 	"fmt"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"gitserver/OpenInspur/cloud-provider-inspur/cloud-controller-manager/pkg"
 	"gitserver/OpenInspur/cloud-provider-inspur/test/e2eutil"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"log"
 	"net/http"
 	"time"
-	"k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 const (
 	TestCluster = "test-cluster"
@@ -18,23 +18,28 @@ const (
 var ipchange = "139.198.121.98"
 var _ = Describe("InCloud LoadBalancer e2e-test", func() {
 	It("Should work as expected in ReUse Mode", func() {
-		inCloud := &pkg.InCloud{}
-		service := &v1.Service{}
-		servicePath := workspace + "/test/loadbalancers/external-http-nginx.yaml"
-		serviceName := "external-http-nginx-service"
+		servicePath := workspace + "/test/test-case/case.yaml"
+		service1Name := "case1"
+		service2Name := "case2"
 		Expect(e2eutil.KubectlApply(servicePath)).ShouldNot(HaveOccurred())
 		defer func() {
+			service, err := k8sclient.CoreV1().Services("default").Get(service1Name, metav1.GetOptions{})
+			Expect(err).ShouldNot(HaveOccurred())
+			lbName := ic.GetLoadBalancerName(context.TODO(),TestCluster,service)
 			Expect(e2eutil.KubectlDelete(servicePath)).ShouldNot(HaveOccurred())
 			time.Sleep(time.Second * 70)
-			Eventually(func() error { return e2eutil.WaitForLoadBalancerDeleted(inCloud,service) }, time.Minute*3, time.Second*20).Should(Succeed())
+			lb,_:=pkg.GetLoadBalancer(ic,service)
+			Eventually(func() error { return e2eutil.WaitForLoadBalancerDeleted(lb, lbName) }, time.Minute*3, time.Second*20).Should(Succeed())
 		}()
 		log.Println("Just wait 3 minutes before tests because following procedure is so so so slow ")
 		time.Sleep(3 * time.Minute)
 		log.Println("Wake up, we can test now")
 		Eventually(func() error {
-			return e2eutil.ServiceHasEIP(k8sclient, serviceName, "default", testEIPAddress)
+			return e2eutil.ServiceHasEIP(k8sclient, service1Name, "default", testEIPAddress)
 		}, 2*time.Minute, 20*time.Second).Should(Succeed())
-
+		Eventually(func() error {
+			return e2eutil.ServiceHasEIP(k8sclient, service2Name, "default", testEIPAddress)
+		}, 1*time.Minute, 5*time.Second).Should(Succeed())
 		log.Println("Successfully assign a ip")
 
 		Eventually(func() int { return e2eutil.GerServiceResponse(testEIPAddress, 8089) }, time.Second*20, time.Second*5).Should(Equal(http.StatusOK))
@@ -42,17 +47,18 @@ var _ = Describe("InCloud LoadBalancer e2e-test", func() {
 		log.Println("Successfully get a 200 response")
 	})
 	It("Should work as expected when using sample yamls", func() {
-		//apply service
-		inCloud := &pkg.InCloud{}
-		service := &v1.Service{}
 		service1Path := workspace + "/test/loadbalancers/external-http-nginx.yaml"
 		serviceName := "external-http-nginx"
 		Expect(e2eutil.KubectlApply(service1Path)).ShouldNot(HaveOccurred())
+
 		defer func() {
-			log.Println("Deleting test svc")
+			service, err := k8sclient.CoreV1().Services("default").Get(serviceName, metav1.GetOptions{})
+			Expect(err).ShouldNot(HaveOccurred())
+			lbName := ic.GetLoadBalancerName(context.TODO(),TestCluster,service)
 			Expect(e2eutil.KubectlDelete(service1Path)).ShouldNot(HaveOccurred())
+			lb,_:=pkg.GetLoadBalancer(ic,service)
 			time.Sleep(time.Second * 45)
-			Eventually(func() error { return e2eutil.WaitForLoadBalancerDeleted(inCloud,service) }, time.Minute*2, time.Second*15).Should(Succeed())
+			Eventually(func() error { return e2eutil.WaitForLoadBalancerDeleted(lb, lbName) }, time.Minute*3, time.Second*20).Should(Succeed())
 		}()
 		log.Println("Just wait 2 minutes before tests because following procedure is so so so slow ")
 		time.Sleep(2 * time.Minute)
@@ -73,7 +79,7 @@ var _ = Describe("InCloud LoadBalancer e2e-test", func() {
 		time.Sleep(3 * time.Minute)
 		log.Println("Wake up, we can test now")
 		Eventually(func() error {
-			output, err := pkg.GetLoadBalancer(inCloud,service)
+			output, err := pkg.GetLoadBalancer(ic,svc)
 			if err != nil {
 				return err
 			}

@@ -2,15 +2,17 @@ package e2eutil
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"gitserver/OpenInspur/cloud-provider-inspur/cloud-controller-manager/pkg"
-	v1 "k8s.io/api/core/v1"
+	"io/ioutil"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 	"log"
 	"net/http"
+	"os"
 	"os/exec"
 	"time"
 )
@@ -72,15 +74,34 @@ func GerServiceResponse(ip string, port int) int {
 	}
 	return resp.StatusCode
 }
-
-func WaitForLoadBalancerDeleted(config *pkg.InCloud,service *v1.Service) error {
-	output, err := pkg.GetLoadBalancer(config,service)
+func GetInloud() (*pkg.InCloud, error) {
+	ic := &pkg.InCloud{}
+	data ,err := ioutil.ReadFile("/etc/kubernetes/node-kubeconfig.yaml")
+	if err !=nil{
+		return nil ,err
+	}
+	err1 := json.Unmarshal([]byte(data),ic)
+	if err1 !=nil{
+		return nil,err1
+	}
+	return ic,nil
+}
+func WaitForLoadBalancerDeleted(lb *pkg.LoadBalancer, lbName string) error {
+	unaccept1 := "pending"
+	unaccept2 := "active"
+	owner := os.Getenv("API_OWNER")
+	input := &service.DescribeLoadBalancersInput{
+		Status:     []*string{&unaccept1, &unaccept2},
+		SearchWord: &lbName,
+		Owner:      &owner,
+	}
+	output, err := lbapi.DescribeLoadBalancers(input)
 	if err != nil {
 		return err
 	}
-	if output == nil {
+	if len(output.LoadBalancerSet) == 0 {
 		return nil
 	}
-	log.Printf("id:%s, name:%s, status:%s", output.SlbId, output.SlbName, output.State)
+	log.Printf("id:%s, name:%s, status:%s", *output.LoadBalancerSet[0].LoadBalancerID, *output.LoadBalancerSet[0].LoadBalancerName, *output.LoadBalancerSet[0].Status)
 	return fmt.Errorf("LB has not been deleted")
 }

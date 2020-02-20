@@ -37,8 +37,8 @@ var (
 	workspace     string
 	testNamespace string
 	k8sclient     *kubernetes.Clientset
-	qcService     *pkg.InCloud
-	qingcloudLB   pkg.LoadBalancer
+	ic     *pkg.InCloud
+	incloudLB   pkg.LoadBalancer
 	testEIPID     string
 	testEIPAddress   string
 )
@@ -49,6 +49,9 @@ func getWorkspace() string {
 }
 
 var _ = BeforeSuite(func() {
+	incloud,err := e2eutil.GetInloud()
+	Expect(err).ShouldNot(HaveOccurred(), "Failed init qc service")
+	ic = incloud
 	testNamespace = os.Getenv("TEST_NS")
 	Expect(testNamespace).ShouldNot(BeEmpty())
 	workspace = getWorkspace() + "/../../.."
