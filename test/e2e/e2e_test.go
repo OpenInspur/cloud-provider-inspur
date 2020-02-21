@@ -1,7 +1,6 @@
 package e2e
 
 import (
-	"context"
 	"fmt"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -23,13 +22,9 @@ var _ = Describe("InCloud LoadBalancer e2e-test", func() {
 		service2Name := "case2"
 		Expect(e2eutil.KubectlApply(servicePath)).ShouldNot(HaveOccurred())
 		defer func() {
-			service, err := k8sclient.CoreV1().Services("default").Get(service1Name, metav1.GetOptions{})
+			_, err := k8sclient.CoreV1().Services("default").Get(service1Name, metav1.GetOptions{})
 			Expect(err).ShouldNot(HaveOccurred())
-			lbName := ic.GetLoadBalancerName(context.TODO(),TestCluster,service)
 			Expect(e2eutil.KubectlDelete(servicePath)).ShouldNot(HaveOccurred())
-			time.Sleep(time.Second * 70)
-			lb,_:=pkg.GetLoadBalancer(ic,service)
-			Eventually(func() error { return e2eutil.WaitForLoadBalancerDeleted(lb, lbName) }, time.Minute*3, time.Second*20).Should(Succeed())
 		}()
 		log.Println("Just wait 3 minutes before tests because following procedure is so so so slow ")
 		time.Sleep(3 * time.Minute)
@@ -52,13 +47,9 @@ var _ = Describe("InCloud LoadBalancer e2e-test", func() {
 		Expect(e2eutil.KubectlApply(service1Path)).ShouldNot(HaveOccurred())
 
 		defer func() {
-			service, err := k8sclient.CoreV1().Services("default").Get(serviceName, metav1.GetOptions{})
+			_, err := k8sclient.CoreV1().Services("default").Get(serviceName, metav1.GetOptions{})
 			Expect(err).ShouldNot(HaveOccurred())
-			lbName := ic.GetLoadBalancerName(context.TODO(),TestCluster,service)
 			Expect(e2eutil.KubectlDelete(service1Path)).ShouldNot(HaveOccurred())
-			lb,_:=pkg.GetLoadBalancer(ic,service)
-			time.Sleep(time.Second * 45)
-			Eventually(func() error { return e2eutil.WaitForLoadBalancerDeleted(lb, lbName) }, time.Minute*3, time.Second*20).Should(Succeed())
 		}()
 		log.Println("Just wait 2 minutes before tests because following procedure is so so so slow ")
 		time.Sleep(2 * time.Minute)
@@ -67,7 +58,7 @@ var _ = Describe("InCloud LoadBalancer e2e-test", func() {
 			return e2eutil.ServiceHasEIP(k8sclient, serviceName, "default", testEIPAddress)
 		}, 3*time.Minute, 20*time.Second).Should(Succeed())
 		log.Println("Successfully assign a ip")
-		Eventually(func() int { return e2eutil.GerServiceResponse(testEIPAddress, 8088) }, time.Second*20, time.Second*5).Should(Equal(http.StatusOK))
+		Eventually(func() int { return e2eutil.GerServiceResponse(testEIPAddress, 80) }, time.Second*20, time.Second*5).Should(Equal(http.StatusOK))
 		log.Println("Successfully get a 200 response")
 
 		//update size
@@ -83,10 +74,10 @@ var _ = Describe("InCloud LoadBalancer e2e-test", func() {
 			if err != nil {
 				return err
 			}
-			if output.EipAddress == ipchange && output.SlbId ==""{
+			if output.EipAddress == ipchange {
 					return nil
 			}
-			return fmt.Errorf("Lb type is not changed or ip not change")
+			return fmt.Errorf("ip not change")
 		}, 3*time.Minute, 20*time.Second).Should(Succeed())
 		Eventually(func() int { return e2eutil.GerServiceResponse(ipchange, 8088) }, time.Second*20, time.Second*2).Should(Equal(http.StatusOK))
 		log.Println("Successfully get a 200 response after resizing")

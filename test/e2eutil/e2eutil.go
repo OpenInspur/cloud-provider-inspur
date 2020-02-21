@@ -12,11 +12,9 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"log"
 	"net/http"
-	"os"
 	"os/exec"
 	"time"
 )
-
 func WaitForController(c *kubernetes.Clientset, namespace, name string, retryInterval, timeout time.Duration) error {
 	err := wait.Poll(retryInterval, timeout, func() (done bool, err error) {
 		controller, err := c.AppsV1().Deployments(namespace).Get(name, metav1.GetOptions{})
@@ -86,16 +84,16 @@ func GetInloud() (*pkg.InCloud, error) {
 	}
 	return ic,nil
 }
-func WaitForLoadBalancerDeleted(lb *pkg.LoadBalancer, lbName string) error {
+/*func WaitForLoadBalancerDeleted(lb *pkg.LoadBalancer, lbName string) error {
 	unaccept1 := "pending"
 	unaccept2 := "active"
 	owner := os.Getenv("API_OWNER")
-	input := &service.DescribeLoadBalancersInput{
+	input := &DescribeLoadBalancersInput{
 		Status:     []*string{&unaccept1, &unaccept2},
 		SearchWord: &lbName,
 		Owner:      &owner,
 	}
-	output, err := lbapi.DescribeLoadBalancers(input)
+	output, err := lb.DescribeLoadBalancers(input)
 	if err != nil {
 		return err
 	}
@@ -104,4 +102,4 @@ func WaitForLoadBalancerDeleted(lb *pkg.LoadBalancer, lbName string) error {
 	}
 	log.Printf("id:%s, name:%s, status:%s", *output.LoadBalancerSet[0].LoadBalancerID, *output.LoadBalancerSet[0].LoadBalancerName, *output.LoadBalancerSet[0].Status)
 	return fmt.Errorf("LB has not been deleted")
-}
+}*/

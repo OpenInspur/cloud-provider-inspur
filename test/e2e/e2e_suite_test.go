@@ -6,7 +6,6 @@ import (
 	. "github.com/onsi/gomega"
 	"gitserver/OpenInspur/cloud-provider-inspur/cloud-controller-manager/pkg"
 	"gitserver/OpenInspur/cloud-provider-inspur/test/e2eutil"
-	v1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 	"log"
@@ -38,8 +37,6 @@ var (
 	testNamespace string
 	k8sclient     *kubernetes.Clientset
 	ic     *pkg.InCloud
-	incloudLB   pkg.LoadBalancer
-	testEIPID     string
 	testEIPAddress   string
 )
 
@@ -70,7 +67,7 @@ var _ = BeforeSuite(func() {
 var _ = AfterSuite(func() {
 	cmd := exec.Command("kubectl", "delete", "-f", workspace+"/test/manager.yaml")
 	Expect(cmd.Run()).ShouldNot(HaveOccurred())
-	Expect(cleanup()).ShouldNot(HaveOccurred())
+	//Expect(cleanup()).ShouldNot(HaveOccurred())
 })
 
 func homeDir() string {
@@ -80,10 +77,8 @@ func homeDir() string {
 	return ""
 }
 
-func cleanup() error {
-	inCloud :=&pkg.InCloud{}
-	service := &v1.Service{}
-	_, err := pkg.GetLoadBalancer(inCloud,service)
+/*func cleanup() error {
+	_, err := pkg.GetLoadBalancer(ic,service)
 	if err != nil {
 		if IsResourceNotFound(err) {
 			return nil
@@ -91,8 +86,8 @@ func cleanup() error {
 		return err
 	}
 	log.Println("Cleanup loadbalancers")
-	return pkg.DeleteLoadBalancer(inCloud,service)
-}
+	return pkg.DeleteLoadBalancer(ic,service)
+}*/
 func (e *Error) Error() string {
 	return fmt.Sprintf("[%s] happened when [%s] type: [%s] name: [%s], msg: [%s]", e.Type, e.Action, e.ResourceType, e.ResouceName, e.Message)
 }
