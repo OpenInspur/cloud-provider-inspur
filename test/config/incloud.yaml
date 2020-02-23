@@ -1,0 +1,7 @@
+icConfigPath: /etc/kubernetes/node-kubeconfig.yaml
+zone: ap2a
+defaultVxNetForLB: vxnet-lddzg8e
+clusterID: test-cluster
+isApp: false
+tagIDs:
+  - tag-d3dkqdu7
